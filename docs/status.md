@@ -3,6 +3,32 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## provider (#5)
+
+- The provider trait is carried over unchanged, with `ChatStream` and
+  `GatewayError` next to it. The request and response types it speaks are in
+  inference-core.
+- `LocalLlama` is the earlier local provider, ported with its test and six
+  new ones: lazy start on the first request, streamed tokens, embeddings,
+  listing, health, zero cost, typed errors.
+- Every request carries the secret of the current launch.
+
+Deviations:
+
+- **One instance, one job.** The earlier provider advertised chat and
+  embeddings from one server. The real server does one or the other, so the
+  provider reports the capability of its instance and answers a request for
+  the other with `Unavailable`, without starting anything. Serving both
+  means two providers. This is a behavior change to a ported module; it was
+  made because the earlier behavior cannot work against the real server.
+- **Streams are decoded line by line.** The earlier code decoded each
+  network read on its own, which corrupts a character split across two
+  reads. Bytes are now decoded only once a whole line has arrived.
+- **No proxy.** The HTTP client for the local server ignores proxy variables
+  in the environment.
+- **Routing was not ported.** The earlier gateway's `route` function and its
+  inputs are routing policy; they go to the engine with the router.
+
 ## llama: the model server supervisor (#4)
 
 Ported from the earlier build with its tests, split from one 31 KB file into

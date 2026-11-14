@@ -1,0 +1,27 @@
+[package]
+name = "isonomic-provider"
+description = "The frozen inference provider trait and the local provider backed by the llama.cpp server"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+isonomic-inference-core = { path = "../inference-core" }
+isonomic-llama = { path = "../llama" }
+async-stream = { workspace = true }
+async-trait = { workspace = true }
+futures-core = { workspace = true }
+futures-util = { workspace = true }
+reqwest = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+isonomic-inference-testkit = { path = "../testkit" }
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+
+[lints]
+workspace = true
