@@ -11,6 +11,7 @@ use tokio::process::Child;
 use tokio::sync::Mutex;
 
 use crate::process::{self, Guardian};
+use crate::spec::WorkerError;
 use crate::state::{should_trip_breaker, ServiceState};
 use crate::supervisor::{launch, probe, push_log, ControlState, Launch, Shared};
 
@@ -80,6 +81,15 @@ fn superseded(shared: &Shared, generation: u64) -> bool {
     shared.generation.load(Ordering::SeqCst) != generation
 }
 
+/// Ask the memory gate whether the model may be loaded now.
+pub(crate) async fn admit(shared: &Shared) -> Result<(), WorkerError> {
+    let model_bytes = tokio::fs::metadata(&shared.spec.model_path).await?.len();
+    shared
+        .gate
+        .admit(model_bytes)
+        .map_err(WorkerError::RamDenied)
+}
+
 /// Owns the child: reaps exits, distinguishes deliberate stops from crashes,
 /// restarts on the backoff schedule, trips the breaker into Degraded.
 pub(crate) async fn run_monitor(
@@ -128,11 +138,20 @@ pub(crate) async fn run_monitor(
         shared.state_tx.send_replace(ServiceState::Starting);
         shared.clock.sleep((shared.spec.backoff)(attempt)).await;
         attempt = attempt.saturating_add(1);
-        shared.restart_total.fetch_add(1, Ordering::SeqCst);
 
         if superseded(&shared, generation) {
             return;
         }
+        // The memory gate is asked before every start, restarts included.
+        // A refusal stops here: the worker is not restarted, the state goes
+        // back to Stopped, and the next request's lazy start asks again and
+        // reports the refusal to its caller.
+        if let Err(reason) = admit(&shared).await {
+            push_log(&shared, format!("restart refused: {reason}"));
+            shared.state_tx.send_replace(ServiceState::Stopped);
+            return;
+        }
+        shared.restart_total.fetch_add(1, Ordering::SeqCst);
         // A new launch: new port (unless one was injected) and a new secret.
         let endpoint = match launch(&shared) {
             Ok(Launch {

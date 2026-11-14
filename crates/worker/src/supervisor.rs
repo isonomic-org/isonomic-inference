@@ -195,13 +195,7 @@ impl WorkerSupervisor {
         }
 
         self.shared.spec.validate()?;
-        let model_bytes = tokio::fs::metadata(&self.shared.spec.model_path)
-            .await?
-            .len();
-        self.shared
-            .gate
-            .admit(model_bytes)
-            .map_err(WorkerError::RamDenied)?;
+        tasks::admit(&self.shared).await?;
 
         self.shared.stopping.store(false, Ordering::SeqCst);
         let generation = self.shared.generation.load(Ordering::SeqCst);

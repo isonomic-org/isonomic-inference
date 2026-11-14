@@ -13,6 +13,8 @@ Updated at every issue boundary. A successor session resumes from here.
 | 5 | #5 | provider: the frozen trait and the local provider | done |
 | 6 | #6 | xtask: smoke test against a real server | done |
 | 7 | #7 | worker: extract the reusable lifecycle | done |
+| 8 | #15 | CI: never cancel a run on main | done |
+| 9 | #17 | Ask the memory gate before every start | done |
 
 Work the issues in this order. Each one is a brief: Context, Acceptance
 criteria, Files in scope, Out of scope.
@@ -23,8 +25,6 @@ criteria, Files in scope, Out of scope.
   `cargo xtask fetch phi-3-mini-4k-instruct-q4 --dir models`, then
   `cargo xtask smoke --server <llama-server> --model models/Phi-3-mini-4k-instruct-q4.gguf`.
   Paste the report into `docs/status.md`.
-- Decide whether the memory gate is asked again on a crash restart (see the
-  llama entry in `docs/status.md`).
 - Decide the default chat model once a real tokens-per-second number exists.
 
 ## Next three issues
