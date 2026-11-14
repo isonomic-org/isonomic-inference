@@ -3,6 +3,50 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## worker: the reusable lifecycle (#7)
+
+Done after the port passed its tests, as the brief requires.
+
+- The lifecycle (spawn, probe, recover, idle unload, gate, environment,
+  process group, guardian) moved from `llama` into `worker`, parameterized
+  by a `WorkerSpec`: the binary, the arguments for a launch, and a
+  `HealthProbe`. `HttpProbe` is the probe the llama.cpp server uses.
+- `llama` is now its configuration, the translation into a spec, and a thin
+  `LlamaSupervisor` that dereferences to the worker supervisor. Its public
+  names are unchanged, and its 17 lifecycle and hardening tests pass
+  untouched.
+- New tests run a worker that is not the llama.cpp server (other arguments,
+  another secret variable, a probe that is not HTTP) through the same
+  supervisor.
+- `speech` and `image` are reserved in the README only.
+
+Gate for Milestone 0, and the test that proves each item:
+
+1. First chat request starts the worker; tokens arrive as a stream:
+   `provider/tests/local.rs`,
+   `the_first_chat_request_starts_the_worker_and_tokens_arrive_as_a_stream`.
+2. Idle timeout stops it; the next request starts it again:
+   `after_the_idle_timeout_the_worker_stops_and_the_next_request_starts_it_again`
+   (provider) and `idle_unload_stops_without_counting_a_crash_and_restarts_lazily`
+   (llama).
+3. A killed worker restarts; repeated crashes trip the breaker and keep the
+   logs: `kill_9_restarts_on_the_backoff_schedule` and
+   `breaker_trips_to_degraded_with_logs_after_repeated_crashes` (llama).
+4. A model too large for the gate is refused with numbers and a reason, and
+   nothing starts: `a_model_too_large_for_the_gate_is_refused_and_nothing_starts`
+   (llama) and `a_model_too_large_for_the_gate_is_refused_with_numbers_and_a_reason`
+   (provider).
+5. A wrong hash is rejected and leaves no usable file; a cached file is
+   re-verified: `rejects_a_checksum_mismatch`,
+   `a_corrupt_cached_file_is_reverified_discarded_and_replaced`,
+   `a_corrupt_cached_file_is_never_handed_back_when_the_download_fails`
+   (library).
+6. The worker's environment contains only allow-listed variables:
+   `the_worker_environment_contains_only_allow_listed_variables` (llama).
+
+Smoke: passed against a real server with a synthetic model (see the entry
+below). A real-model run on the Intel test machine is open.
+
 ## xtask: smoke, models, fetch (#6)
 
 - `cargo xtask smoke --server <path> --model <gguf>` starts the real server
