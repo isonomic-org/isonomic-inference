@@ -129,6 +129,12 @@ impl Decoder for ChatDecoder {
     type Event = Event;
 
     fn decode(&mut self, event: Event) -> Result<Vec<Delta>, ProtocolError> {
+        if self.done {
+            return match event {
+                Event::Done => Ok(Vec::new()),
+                _ => Err(ProtocolError::AfterEnd),
+            };
+        }
         match event {
             Event::Chunk(chunk) => self.chunk(chunk),
             Event::Done => {

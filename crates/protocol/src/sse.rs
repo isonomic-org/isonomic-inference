@@ -24,6 +24,8 @@ pub struct SseParser {
     has_data: bool,
     /// A carriage return ended the last chunk; a following `\n` belongs to it.
     after_cr: bool,
+    /// Bytes of a leading byte-order mark still to skip, per the standard.
+    bom_left: &'static [u8],
 }
 
 impl SseParser {
@@ -35,6 +37,7 @@ impl SseParser {
             data: String::new(),
             has_data: false,
             after_cr: false,
+            bom_left: b"\xEF\xBB\xBF",
         }
     }
 
@@ -42,6 +45,16 @@ impl SseParser {
     pub fn push(&mut self, bytes: &[u8]) -> Result<Vec<SseFrame>, ProtocolError> {
         let mut frames = Vec::new();
         for &byte in bytes {
+            if let Some((&first, rest)) = self.bom_left.split_first() {
+                if byte == first {
+                    self.bom_left = rest;
+                    continue;
+                }
+                // Not a byte-order mark: the bytes skipped so far were data.
+                let skipped = 3 - self.bom_left.len();
+                self.bom_left = &[];
+                self.line.extend_from_slice(&b"\xEF\xBB\xBF"[..skipped]);
+            }
             if self.after_cr {
                 self.after_cr = false;
                 if byte == b'\n' {
@@ -163,6 +176,17 @@ mod tests {
         assert!(parser.push(b"data: a\r").unwrap().is_empty());
         assert!(parser.push(b"\n\r").unwrap().len() == 1);
         assert!(!parser.has_partial());
+    }
+
+    #[test]
+    fn a_leading_byte_order_mark_is_skipped() {
+        let mut parser = SseParser::new(Limits::default());
+        assert!(parser.push(b"\xEF\xBB").unwrap().is_empty());
+        let got = parser.push(b"\xBFdata: x\n\n").unwrap();
+        assert_eq!(got[0].data, "x");
+        // Only at the very start.
+        let got = frames("data: \u{feff}y\n\n");
+        assert_eq!(got[0].data, "\u{feff}y");
     }
 
     #[test]

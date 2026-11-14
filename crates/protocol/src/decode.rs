@@ -69,8 +69,10 @@ pub enum Delta {
 /// state it needs to map indexes; it never buffers a reply.
 pub trait Decoder {
     type Event;
+    /// After the end, a closing frame yields nothing and any other event is
+    /// `ProtocolError::AfterEnd`.
     fn decode(&mut self, event: Self::Event) -> Result<Vec<Delta>, ProtocolError>;
-    /// Whether the format's closing frame has arrived.
+    /// Whether the format's closing frame (or an in-stream error) has arrived.
     fn is_done(&self) -> bool;
 }
 
@@ -104,9 +106,9 @@ impl<W: Wire> StreamDecoder<W> {
     pub fn push(&mut self, bytes: &[u8]) -> Result<Vec<Delta>, ProtocolError> {
         let mut deltas = Vec::new();
         for frame in self.parser.push(bytes)? {
-            if self.decoder.is_done() {
-                return Err(ProtocolError::AfterEnd);
-            }
+            // Decoders accept a repeated closing frame after the end (some
+            // servers send one after an in-stream error) and reject anything
+            // else with `ProtocolError::AfterEnd`.
             let event = W::parse_event(&frame, &self.limits)?;
             deltas.extend(self.decoder.decode(event)?);
         }

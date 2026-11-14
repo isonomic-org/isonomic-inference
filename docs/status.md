@@ -55,6 +55,9 @@ format wait.
 - **Constant memory**: a 1 MB and a 4 MB stream hold the same peak buffer,
   no larger than one event (`tests/stream_memory.rs`).
 - **Limits**: every limit has a test (`tests/limits.rs`).
+- **Stream edges**: a leading byte-order mark is skipped; after the end (the
+  closing frame or an in-stream error) a repeated closing frame is accepted
+  and any other event is an error.
 - **Dependencies**: a CI job checks the crate's dependency closure against
   `crates/protocol/deps-allow.txt`.
 
