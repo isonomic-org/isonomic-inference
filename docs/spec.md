@@ -55,9 +55,10 @@ breaker trips.
 
 - **Lazy start.** Nothing runs until the first request calls
   `ensure_running`.
-- **Memory gate.** Asked with the model file's size before a lazy start. A
-  refusal carries required bytes, available bytes and a reason, and nothing
-  is started.
+- **Memory gate.** Asked with the model file's size before every start: the
+  first lazy start and every crash restart. A refusal carries required
+  bytes, available bytes and a reason, and nothing is started. A refused
+  restart leaves the worker `Stopped`; the next request asks again.
 - **Health.** A port check, then a protocol probe. Every 5 s while starting
   (bounded by the start timeout, 120 s), every 30 s after.
 - **Hung worker.** Two failed steady-state probes with the process alive:

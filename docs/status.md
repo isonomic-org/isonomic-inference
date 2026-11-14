@@ -3,6 +3,19 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## The memory gate is asked before every start (#17)
+
+- The gate is now asked before a crash restart as well as before a lazy
+  start. This settles the open question in the llama entry below, following
+  the brief's wording ("the memory gate consulted before every start").
+- A refused restart does not start anything: the state returns to
+  `Stopped`, the refusal is in the last log lines, and the restart is not
+  counted. The next request's lazy start asks again and returns the refusal
+  to its caller with required bytes, available bytes and the reason.
+- This changes the behavior of a ported module. Before, a worker that
+  crashed was always restarted, even if memory had run out meanwhile.
+- Tests: `crates/worker/tests/gate.rs`, a refused restart and an admitted one.
+
 ## worker: the reusable lifecycle (#7)
 
 Done after the port passed its tests, as the brief requires.
