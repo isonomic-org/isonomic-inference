@@ -15,6 +15,7 @@ Updated at every issue boundary. A successor session resumes from here.
 | 7 | #7 | worker: extract the reusable lifecycle | done |
 | 8 | #15 | CI: never cancel a run on main | done |
 | 9 | #17 | Ask the memory gate before every start | done |
+| 10 | #19 | Model library refresh, November 2026 | done |
 
 Work the issues in this order. Each one is a brief: Context, Acceptance
 criteria, Files in scope, Out of scope.
@@ -25,7 +26,8 @@ criteria, Files in scope, Out of scope.
   `cargo xtask fetch phi-3-mini-4k-instruct-q4 --dir models`, then
   `cargo xtask smoke --server <llama-server> --model models/Phi-3-mini-4k-instruct-q4.gguf`.
   Paste the report into `docs/status.md`.
-- Decide the default chat model once a real tokens-per-second number exists.
+- Decide the default chat model once a real tokens-per-second number exists:
+  Qwen3.5 4B is the recommended replacement for Phi-3 mini.
 
 ## Next three issues
 

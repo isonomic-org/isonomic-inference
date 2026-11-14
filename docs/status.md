@@ -3,6 +3,31 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## Model library refresh, November 2026 (#19)
+
+Chat models added, each with its file, size and SHA-256 read on 2026-11-14
+from the publisher's or a well-known quantizer's Hugging Face listing:
+
+| Id | Size | License | Fits |
+| --- | --- | --- | --- |
+| `qwen3.5-4b-q4-k-m` | 3.0 GB | Apache-2.0 | every profile, CPU-only included |
+| `qwen3.5-9b-q4-k-m` | 5.7 GB | Apache-2.0 | 16 GB machines |
+| `gemma-4-e4b-it-qat-q4-0` | 5.2 GB | Apache-2.0 | 16 GB machines |
+| `qwen3.6-35b-a3b-ud-q4-k-xl` | 22.4 GB | Apache-2.0 | High profile only (32 GB and up) |
+
+- Qwen3 4B is removed: Qwen3.5 4B supersedes it at about the same size.
+- All new entries are drafts until a real download confirms their hash.
+- These models are text and vision models. Only text is served for now;
+  vision needs a second projector file per model and is not wired up.
+- **Kimi is not added.** Every current Kimi model is server-class: K3 has
+  about 2.8 trillion parameters and even its smallest community quantization
+  is hundreds of gigabytes. Its custom license also adds commercial
+  conditions above a revenue threshold. It belongs with remote providers in
+  the engine, not in the local library.
+- **Default unchanged.** Qwen3.5 4B is the recommended replacement for
+  Phi-3 mini as the default chat model (262K context against 4K). The switch
+  waits on a tokens-per-second number from the Intel test machine.
+
 ## The memory gate is asked before every start (#17)
 
 - The gate is now asked before a crash restart as well as before a lazy
