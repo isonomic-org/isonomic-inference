@@ -7,5 +7,14 @@ rust-version.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[dependencies]
+isonomic-inference-core = { path = "../crates/inference-core" }
+isonomic-llama = { path = "../crates/llama" }
+isonomic-model-library = { path = "../crates/library" }
+isonomic-provider = { path = "../crates/provider" }
+futures-util = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+
 [lints]
 workspace = true

@@ -11,7 +11,7 @@ Updated at every issue boundary. A successor session resumes from here.
 | 3 | #3 | library: model manifest and verified download | done |
 | 4 | #4 | llama: port the model server supervisor | done |
 | 5 | #5 | provider: the frozen trait and the local provider | done |
-| 6 | #6 | xtask: smoke test against a real server | not started |
+| 6 | #6 | xtask: smoke test against a real server | done |
 | 7 | #7 | worker: extract the reusable lifecycle | not started |
 
 Work the issues in this order. Each one is a brief: Context, Acceptance
@@ -19,8 +19,7 @@ criteria, Files in scope, Out of scope.
 
 ## Next
 
-1. xtask: smoke test against a real server (#6)
-2. worker: extract the reusable lifecycle (#7)
+1. worker: extract the reusable lifecycle (#7)
 
 ## How to resume
 
