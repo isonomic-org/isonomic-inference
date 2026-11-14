@@ -18,6 +18,7 @@ Updated at every issue boundary. A successor session resumes from here.
 | 10 | #19 | Model library refresh, November 2026 | done |
 | 11 | #21 | Server launch defaults: context, slots, reasoning | done |
 | 12 | #23 | Milestone 0 gate: real-model smoke on the Intel test machine | done |
+| 13 | #25 | Small Qwen3.5 models; manifest hashes confirmed | done |
 
 Work the issues in this order. Each one is a brief: Context, Acceptance
 criteria, Files in scope, Out of scope.
@@ -31,7 +32,8 @@ criteria, Files in scope, Out of scope.
 
 ## Next three issues
 
-1. Confirm the remaining draft hashes in the manifest with real downloads.
+1. Benchmark every chat model on the Intel test machine while it is idle,
+   and record which sizes each hardware profile should default to.
 2. Switch `ci.yml` to the organization's shared workflow once it exists.
 3. Engine integration: the engine injects its memory gate, the server
    binary path and a context size per hardware profile, and its model
