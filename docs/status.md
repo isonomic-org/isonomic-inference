@@ -3,6 +3,30 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## Server launch defaults: context, slots, reasoning (#21)
+
+Found by the first real-model smoke run on the Intel test machine:
+
+- **Context.** With no `-c`, the server reserves the model's full trained
+  context. For Qwen3.5 4B that is 262,144 tokens, and loading took 127 s.
+  Every launch now passes `-c`, 8,192 tokens by default
+  (`DEFAULT_CONTEXT_SIZE`); the engine sets the real value per profile.
+  Load time with the default: 13 s.
+- **Slots.** The server picked 4 request slots on its own, each reserving
+  memory. Every launch now passes `-np 1`: one person uses a desktop at a
+  time.
+- **Reasoning.** Qwen3.5 thinks before it answers, and the server streams
+  the thoughts outside the answer text. The frozen chat types have no
+  reasoning channel, so all 64 requested tokens went into thinking and the
+  caller received no text at all. Chat launches now pass `-rea off` by
+  default (`Reasoning::Off`; `On` and `Auto` are available).
+- `-c`, `--ctx-size`, `-np`, `--parallel`, `-rea` and `--reasoning` are now
+  reserved: the supervisor owns them.
+
+Open question for Omar: showing a model's reasoning in Chat needs a
+reasoning field on the streamed chunk, which is a change to the frozen
+provider types. Until then reasoning stays off.
+
 ## Model library refresh, November 2026 (#19)
 
 Chat models added, each with its file, size and SHA-256 read on 2026-11-14

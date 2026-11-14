@@ -17,8 +17,8 @@ use isonomic_inference_core::{Clock, RamGate, SystemClock};
 use isonomic_worker::WorkerSupervisor;
 
 pub use config::{
-    ApiKeyMode, LlamaConfig, ServerMode, API_KEY_ENV, ENV_ALLOW_LIST, HEALTH_PATH, RESERVED_ARGS,
-    WORKER_NAME,
+    ApiKeyMode, LlamaConfig, Reasoning, ServerMode, API_KEY_ENV, DEFAULT_CONTEXT_SIZE,
+    ENV_ALLOW_LIST, HEALTH_PATH, RESERVED_ARGS, WORKER_NAME,
 };
 pub use isonomic_worker::{
     probe_http, restart_backoff_secs, should_trip_breaker, Endpoint, ServiceState, BREAKER_WINDOW,

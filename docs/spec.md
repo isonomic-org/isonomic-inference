@@ -91,6 +91,12 @@ The llama.cpp server as a worker: its command line (`--host`, `--port`,
 `-m`), its health endpoint (`/health`: 503 while loading, 200 when ready),
 its API key variable (`LLAMA_API_KEY`).
 
+**Launch settings the supervisor owns:** where to listen, what to load,
+the mode, the context window (`-c`, 8,192 tokens by default), the number of
+request slots (`-np 1`) and, for chat, whether the model thinks before it
+answers (`-rea`, off by default, because the frozen chat types have no
+channel for reasoning).
+
 **One server, one job.** The llama.cpp server restricts an instance to
 embeddings when started with `--embeddings` and refuses embeddings otherwise.
 So an instance is started for chat or for embeddings (`ServerMode`), and
