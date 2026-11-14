@@ -1,0 +1,86 @@
+{
+  "default_chat": "phi-3-mini-4k-instruct-q4",
+  "default_embeddings": "nomic-embed-text-v1.5-q4",
+  "models": [
+    {
+      "id": "phi-3-mini-4k-instruct-q4",
+      "name": "Phi-3 mini 4k instruct (Q4)",
+      "file_name": "Phi-3-mini-4k-instruct-q4.gguf",
+      "source_url": "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf",
+      "sha256": "8a83c7fb9049a9b2e92266fa7ad04933bb53aa1e85136b7b30f1b8000ff2edef",
+      "size_bytes": 2393231072,
+      "context_length": 4096,
+      "capabilities": ["chat"],
+      "license": {
+        "name": "MIT",
+        "commercial_use": true,
+        "url": "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/blob/main/LICENSE"
+      },
+      "draft": true
+    },
+    {
+      "id": "qwen3-4b-q4-k-m",
+      "name": "Qwen3 4B (Q4_K_M)",
+      "file_name": "Qwen3-4B-Q4_K_M.gguf",
+      "source_url": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf",
+      "sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+      "size_bytes": 2497280256,
+      "context_length": 32768,
+      "capabilities": ["chat"],
+      "license": {
+        "name": "Apache-2.0",
+        "commercial_use": true,
+        "url": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/blob/main/LICENSE"
+      },
+      "draft": true
+    },
+    {
+      "id": "smollm3-3b-q4-k-m",
+      "name": "SmolLM3 3B (Q4_K_M)",
+      "file_name": "SmolLM3-Q4_K_M.gguf",
+      "source_url": "https://huggingface.co/ggml-org/SmolLM3-3B-GGUF/resolve/main/SmolLM3-Q4_K_M.gguf",
+      "sha256": "8334b850b7bd46238c16b0c550df2138f0889bf433809008cc17a8b05761863e",
+      "size_bytes": 1915305312,
+      "context_length": 65536,
+      "capabilities": ["chat"],
+      "license": {
+        "name": "Apache-2.0",
+        "commercial_use": true,
+        "url": "https://huggingface.co/HuggingFaceTB/SmolLM3-3B"
+      },
+      "draft": true
+    },
+    {
+      "id": "nomic-embed-text-v1.5-q4",
+      "name": "Nomic Embed Text v1.5 (Q4_K_M)",
+      "file_name": "nomic-embed-text-v1.5.Q4_K_M.gguf",
+      "source_url": "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.Q4_K_M.gguf",
+      "sha256": "d4e388894e09cf3816e8b0896d81d265b55e7a9fff9ab03fe8bf4ef5e11295ac",
+      "size_bytes": 84106624,
+      "context_length": 2048,
+      "capabilities": ["embeddings"],
+      "license": {
+        "name": "Apache-2.0",
+        "commercial_use": true,
+        "url": "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF"
+      },
+      "draft": true
+    },
+    {
+      "id": "qwen3-embedding-0.6b-q8",
+      "name": "Qwen3 Embedding 0.6B (Q8_0)",
+      "file_name": "Qwen3-Embedding-0.6B-Q8_0.gguf",
+      "source_url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/main/Qwen3-Embedding-0.6B-Q8_0.gguf",
+      "sha256": "06507c7b42688469c4e7298b0a1e16deff06caf291cf0a5b278c308249c3e439",
+      "size_bytes": 639150592,
+      "context_length": 32768,
+      "capabilities": ["embeddings"],
+      "license": {
+        "name": "Apache-2.0",
+        "commercial_use": true,
+        "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF"
+      },
+      "draft": true
+    }
+  ]
+}
