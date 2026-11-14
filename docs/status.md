@@ -3,6 +3,38 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## library (#3)
+
+- The download is the earlier one, carried over with its tests: streaming
+  SHA-256, a `.part` file renamed only after the hash matches, a cached file
+  hashed again before reuse, progress events.
+- Added tests: a corrupt cached file is re-verified, discarded and replaced;
+  when the replacement download fails, the corrupt file is gone and nothing
+  is handed back.
+- The manifest is `crates/library/models.json`: five models, each with
+  source URL, SHA-256, size, context length, capabilities and license.
+  Loading rejects an entry whose license does not allow commercial use, a
+  malformed hash, a source that is not https, a duplicate id, and a default
+  that cannot do its job.
+- Hashes and sizes were read on 2026-11-14 from the publishers' own file
+  listings on Hugging Face.
+
+Deviations and deferrals:
+
+- **Every manifest entry is a draft.** None of the pinned hashes has been
+  confirmed by a real download from this repo yet. `cargo xtask fetch <id>`
+  (added with the smoke task) does that; clear the flag when it passes.
+- **The default chat model is unchanged**, Phi-3 mini 4k instruct Q4 (MIT).
+  It is not the model I would keep: its 4,096-token context is small for a
+  chat app and it is from early 2024. Qwen3 4B Q4_K_M (Apache-2.0, official
+  GGUF, 32k context, about the same size) is pinned in the manifest as the
+  candidate. The default should change only on a real tokens-per-second
+  number from the Intel test machine.
+- `ensure_model_with` takes a caller-supplied HTTP client; `ensure_model`
+  uses a default one. Tests use a client that ignores proxy variables.
+- The earlier `default_model()` constructor is gone; the default is a
+  manifest field. The 4 GB ceiling for the default is kept as a test.
+
 ## inference-core (#2)
 
 - `ModelRef`, `ModelMetadata`, `License`, `Capability`.
