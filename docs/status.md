@@ -3,6 +3,19 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## Small Qwen3.5 models; manifest hashes confirmed (#25)
+
+- Added Qwen3.5 0.8B (0.53 GB) and Qwen3.5 2B (1.28 GB), Apache-2.0, from
+  the Unsloth GGUF builds. On the Intel test machine the 4B model generates
+  about 3 tokens per second, so Intel Macs need these smaller sizes for
+  interactive use. The engine picks the size per hardware profile.
+- Downloaded on the Intel test machine on 2026-11-14 with
+  `cargo xtask fetch`, each hash checked while streaming: Qwen3.5 0.8B, 2B
+  and 9B, SmolLM3 3B, Gemma 4 E4B, Qwen3 Embedding 0.6B. All matched, so
+  their draft flags are cleared.
+- Every manifest entry is now confirmed except Qwen3.6 35B-A3B (22.4 GB),
+  which was not downloaded: it does not fit the test machine.
+
 ## Milestone 0 gate: real-model smoke on the Intel test machine (#23)
 
 Run on 2026-11-14 on the 2020 Intel MacBook Pro (i7-8850H, 6 cores, 16 GB,
