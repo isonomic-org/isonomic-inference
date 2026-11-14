@@ -1,5 +1,5 @@
 {
-  "default_chat": "phi-3-mini-4k-instruct-q4",
+  "default_chat": "qwen3.5-4b-q4-k-m",
   "default_embeddings": "nomic-embed-text-v1.5-q4",
   "models": [
     {
@@ -18,7 +18,7 @@
         "commercial_use": true,
         "url": "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/blob/main/LICENSE"
       },
-      "draft": true
+      "draft": false
     },
     {
       "id": "smollm3-3b-q4-k-m",
@@ -54,7 +54,7 @@
         "commercial_use": true,
         "url": "https://huggingface.co/Qwen/Qwen3.5-4B"
       },
-      "draft": true
+      "draft": false
     },
     {
       "id": "qwen3.5-9b-q4-k-m",
@@ -126,7 +126,7 @@
         "commercial_use": true,
         "url": "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF"
       },
-      "draft": true
+      "draft": false
     },
     {
       "id": "qwen3-embedding-0.6b-q8",
