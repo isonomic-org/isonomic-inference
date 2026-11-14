@@ -1,0 +1,77 @@
+name: CI
+
+# Self-contained for now. When the organization's shared workflow exists,
+# the `check` job becomes a single `uses:` line pointing at it.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: fmt, clippy, test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Test
+        run: cargo test
+
+  names:
+    name: reference scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: No older names anywhere
+        run: |
+          # The pattern is assembled from fragments so that this file does
+          # not contain the name it forbids.
+          pattern="block""band"
+          if git grep -n -i -I -e "$pattern" -- . ; then
+            echo "::error::an older name appears in the files listed above"
+            exit 1
+          fi
+          if git log --format='%an <%ae>%n%s%n%b' | grep -n -i -e "$pattern"; then
+            echo "::error::an older name appears in the commit history"
+            exit 1
+          fi
+
+  sizes:
+    name: file sizes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source and doc files stay under 20 KB
+        run: |
+          big=$(git ls-files -z -- '*.rs' '*.md' '*.toml' '*.yml' '*.json' \
+            | xargs -0 -r wc -c | awk '$2 != "total" && $1 >= 20000 {print}')
+          if [ -n "$big" ]; then
+            echo "::error::files at or over 20 KB:"
+            echo "$big"
+            exit 1
+          fi
