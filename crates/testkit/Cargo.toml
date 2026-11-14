@@ -1,0 +1,15 @@
+[package]
+name = "isonomic-inference-testkit"
+description = "Test support for Isonomic Inference: a fake model server, stand-in binaries and clock helpers"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+isonomic-inference-core = { path = "../inference-core" }
+tokio = { workspace = true, features = ["net", "io-util", "rt", "sync", "time", "macros"] }
+
+[lints]
+workspace = true

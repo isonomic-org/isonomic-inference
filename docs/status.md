@@ -3,6 +3,79 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## llama: the model server supervisor (#4)
+
+Ported from the earlier build with its tests, split from one 31 KB file into
+`config`, `state`, `health`, `process`, `supervisor` and `tasks`. The seven
+earlier tests are kept; ten new ones cover activity, a hung server, the start
+deadline, stop, the environment, exposure and the death of the parent. A test support crate, `testkit`,
+holds the fake model server, the stand-in scripts and the clock helpers.
+
+Carried over unchanged in behavior: lazy start, port check then `GET
+/health`, steady-state probing with hung-server detection, restart with
+backoff (1 s doubling to 60 s), the breaker (more than 5 restarts in 10
+minutes, last 50 log lines kept, `reset`), idle unload that is not a crash,
+`touch`, the memory gate.
+
+Required changes, all made:
+
+- **Environment.** The worker's environment is built from an allow-list
+  (`LLAMA_API_KEY`, `HOME`, `TMPDIR`, `LANG`) and nothing is inherited. A
+  variable off the list is refused before anything starts.
+- **Exposure.** Loopback only. A free port is chosen at every launch. A
+  random 32-byte secret is generated for every launch and sent on every
+  request, the health probe included.
+- **Process group.** The worker leads its own group and dies with its
+  parent. A guardian (`/bin/sh`) holds a pipe whose only write end is in
+  this process; when this process dies, even by SIGKILL, the pipe closes and
+  the guardian kills the group. The guardian is a member of the group, which
+  keeps the group id reserved while it lives, so a group signal cannot reach
+  an unrelated process.
+- **No inherited prefixes.** Every name and message was renamed.
+- **Injected clock.** Every wait goes through `Clock`.
+
+What the llama.cpp server documentation says (tools/server/README.md at
+commit 32bdc3a, 2026-11-14), and what was done with it:
+
+- `--api-key KEY` exists, and the key can be given in the environment as
+  `LLAMA_API_KEY`. The key is passed that way, so it never appears in the
+  process list. Clients send `Authorization: Bearer <key>`.
+- `GET /health` is public (no key check): 503 while the model loads, 200
+  when ready. The probe sends the key anyway.
+- `--embeddings` restricts an instance to embeddings; an instance without it
+  refuses embeddings. So a launch has a `ServerMode`: chat or embedding.
+- The server reads `LLAMA_ARG_*` variables. With the allow-listed
+  environment the user's shell cannot inject them.
+
+Deviations from the earlier behavior, each small and deliberate:
+
+- **A new port per launch.** The earlier build chose a port once and reused
+  it across restarts. The brief requires a port chosen at start.
+  `ensure_running` now returns an `Endpoint` (address and secret) instead of
+  an address.
+- **`stop` returns once the worker is gone.** The earlier one returned after
+  sending the last signal. The grace period is a config field (5 s).
+- **The pid is cleared when the worker exits.** The earlier build kept a
+  stale pid during the backoff.
+- **A failed spawn returns to `Stopped`.** The earlier build left the state
+  at `Starting`.
+- **The start deadline kills the whole group**, not only the leader.
+- **Reserved arguments are refused** in `extra_args` (host, port, model, API
+  key, mode), so a caller cannot move the server off loopback.
+- `ServiceState::tray_label` was not ported: it is UI text.
+
+Open question for Omar:
+
+- **The gate is asked on lazy starts, not on crash restarts.** That is what
+  the earlier code did, and it is kept. The brief says "before every start".
+  Asking again on a restart would be a behavior change with a new failure
+  state, so it was not made without asking.
+
+Not done:
+
+- Windows: process groups and the guardian are Unix-only. On other
+  platforms those calls are no-ops.
+
 ## library (#3)
 
 - The download is the earlier one, carried over with its tests: streaming
