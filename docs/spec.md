@@ -153,7 +153,8 @@ The hermetic suite proves all of these:
 
 And the smoke test has run once against a real server and model.
 
-Which test proves which item is listed in [status.md](status.md).
+Which test proves which item is listed in the worker entry of
+[status-milestone-0.md](status-milestone-0.md).
 
 ## Out of scope
 

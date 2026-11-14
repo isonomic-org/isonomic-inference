@@ -17,27 +17,25 @@ Updated at every issue boundary. A successor session resumes from here.
 | 9 | #17 | Ask the memory gate before every start | done |
 | 10 | #19 | Model library refresh, November 2026 | done |
 | 11 | #21 | Server launch defaults: context, slots, reasoning | done |
+| 12 | #23 | Milestone 0 gate: real-model smoke on the Intel test machine | done |
 
 Work the issues in this order. Each one is a brief: Context, Acceptance
 criteria, Files in scope, Out of scope.
 
 ## Open
 
-- Smoke test with a real model on the Intel test machine:
-  `cargo xtask fetch phi-3-mini-4k-instruct-q4 --dir models`, then
-  `cargo xtask smoke --server <llama-server> --model models/Phi-3-mini-4k-instruct-q4.gguf`.
-  Paste the report into `docs/status.md`.
-- Decide the default chat model once a real tokens-per-second number exists:
-  Qwen3.5 4B is the recommended replacement for Phi-3 mini.
+- Milestone 0 is complete: every gate item, and the real-model smoke test
+  on the Intel test machine.
+- Showing a model's reasoning in Chat needs a reasoning field on the
+  streamed chunk, a change to the frozen provider types. Omar decides.
 
 ## Next three issues
 
-1. Confirm the manifest hashes with real downloads, clear the draft flags,
-   and record the real-model smoke report.
+1. Confirm the remaining draft hashes in the manifest with real downloads.
 2. Switch `ci.yml` to the organization's shared workflow once it exists.
-3. Engine integration: the engine injects its memory gate and the server
-   binary path, and its model gateway routes to `LocalLlama` (one provider
-   for chat, one for embeddings).
+3. Engine integration: the engine injects its memory gate, the server
+   binary path and a context size per hardware profile, and its model
+   gateway routes to one `LocalLlama` for chat and one for embeddings.
 
 ## How to resume
 
