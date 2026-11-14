@@ -14,7 +14,7 @@ pub mod model;
 
 pub use chat::{
     ChatChunk, ChatMessage, ChatRequest, CostEstimate, EmbedRequest, Embeddings, ModelInfo,
-    ProviderHealth, ProviderId,
+    ProviderHealth, ProviderId, ReasoningChoice,
 };
 pub use clock::{timeout, Clock, ManualClock, Sleep, SystemClock};
 pub use gate::{FixedGate, RamDenial, RamGate};

@@ -40,7 +40,8 @@ must do, [docs/status.md](docs/status.md) for what is built, and
   process group, with a guardian. Do not add a path around any of these.
 - The provider trait in `crates/provider/src/provider.rs` is frozen, and so
   are the types it speaks in `crates/inference-core/src/chat.rs`. Ask before
-  changing either.
+  changing either. The one approved change so far (Decision 4, #28):
+  `ChatChunk::reasoning` and the per-request `ChatRequest::reasoning`.
 - This repo must not depend on `isonomic-capsule`, `isonomic-sdk` or any UI
   crate.
 - `crates/protocol` is pure: no network, files, processes or clocks. Its

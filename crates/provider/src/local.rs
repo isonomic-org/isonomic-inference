@@ -10,17 +10,49 @@ use async_trait::async_trait;
 use futures_util::StreamExt;
 use isonomic_inference_core::{
     Capability, ChatRequest, CostEstimate, EmbedRequest, Embeddings, ModelInfo, ModelMetadata,
-    ProviderHealth, ProviderId,
+    ProviderHealth, ProviderId, ReasoningChoice,
 };
 use isonomic_llama::{Endpoint, LlamaError, LlamaSupervisor, ServerMode, ServiceState};
 
 use crate::provider::{ChatStream, GatewayError, InferenceProvider};
 use crate::sse::{parse_sse_line, LineBuffer, SseEvent};
 
+/// Whether a request may turn reasoning on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReasoningPolicy {
+    /// A request's `reasoning` choice is sent to the server; unset keeps
+    /// the launch default.
+    PerRequest,
+    /// Reasoning is off for every request, whatever it asks.
+    AlwaysOff,
+}
+
+impl ReasoningPolicy {
+    /// Off on Intel Macs, where a small model generates a few tokens per
+    /// second and reasoning would consume the whole reply; per request
+    /// elsewhere.
+    pub fn for_this_machine() -> Self {
+        if cfg!(all(target_os = "macos", target_arch = "x86_64")) {
+            ReasoningPolicy::AlwaysOff
+        } else {
+            ReasoningPolicy::PerRequest
+        }
+    }
+
+    /// The choice to send for a request; `None` sends nothing.
+    pub fn resolve(self, requested: Option<ReasoningChoice>) -> Option<ReasoningChoice> {
+        match self {
+            ReasoningPolicy::PerRequest => requested,
+            ReasoningPolicy::AlwaysOff => Some(ReasoningChoice::Off),
+        }
+    }
+}
+
 pub struct LocalLlama {
     supervisor: Arc<LlamaSupervisor>,
     model_name: String,
     context_length: Option<u32>,
+    reasoning_policy: ReasoningPolicy,
     client: reqwest::Client,
 }
 
@@ -30,6 +62,7 @@ impl LocalLlama {
             supervisor,
             model_name: model_name.into(),
             context_length: None,
+            reasoning_policy: ReasoningPolicy::for_this_machine(),
             // Requests go to loopback only. Proxy settings in the environment
             // must never be able to route them anywhere else.
             client: reqwest::Client::builder()
@@ -52,6 +85,17 @@ impl LocalLlama {
 
     pub fn model_name(&self) -> &str {
         &self.model_name
+    }
+
+    pub fn reasoning_policy(&self) -> ReasoningPolicy {
+        self.reasoning_policy
+    }
+
+    /// Replace the machine's default policy, for tests and for an engine
+    /// that knows the hardware better.
+    pub fn with_reasoning_policy(mut self, policy: ReasoningPolicy) -> Self {
+        self.reasoning_policy = policy;
+        self
     }
 
     /// What the supervised server instance can do. One instance does one
@@ -157,7 +201,13 @@ impl InferenceProvider for LocalLlama {
     async fn chat(&self, req: ChatRequest) -> Result<ChatStream, GatewayError> {
         self.require(Capability::Chat)?;
         let endpoint = self.ensure_endpoint().await?;
-        let body = self.request_body(serde_json::to_value(&req), &req.model, true)?;
+        let mut body = self.request_body(serde_json::to_value(&req), &req.model, true)?;
+        if let Some(choice) = self.reasoning_policy.resolve(req.reasoning) {
+            // The server's chat template reads this per request, over the
+            // launch default set by `--reasoning`.
+            body["chat_template_kwargs"] =
+                serde_json::json!({ "enable_thinking": choice == ReasoningChoice::On });
+        }
         let response = self
             .post(&endpoint, "/v1/chat/completions")
             .json(&body)

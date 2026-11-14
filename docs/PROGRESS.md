@@ -25,6 +25,7 @@ Updated at every issue boundary. A successor session resumes from here.
 | Order | Issue | Task | State |
 | --- | --- | --- | --- |
 | 1 | #27 | Protocol crate: hub types, plus emit and decode for messages and chat | in review |
+| 2 | #28 | Reasoning on streamed chunks, with a per-request control | in review |
 
 Work the issues in this order. Each one is a brief: Context, Acceptance
 criteria, Files in scope, Out of scope.

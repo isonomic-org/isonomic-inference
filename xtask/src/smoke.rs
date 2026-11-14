@@ -220,6 +220,7 @@ async fn chat(
         }],
         temperature: Some(0.0),
         max_tokens: Some(options.max_tokens),
+        reasoning: None,
     };
     let asked = Instant::now();
     let mut stream = provider.chat(request).await.map_err(|e| e.to_string())?;
