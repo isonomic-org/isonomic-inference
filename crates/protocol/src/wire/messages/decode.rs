@@ -178,6 +178,12 @@ impl Decoder for MessagesDecoder {
     type Event = Event;
 
     fn decode(&mut self, event: Event) -> Result<Vec<Delta>, ProtocolError> {
+        if self.done {
+            return match event {
+                Event::MessageStop | Event::Ping => Ok(Vec::new()),
+                _ => Err(ProtocolError::AfterEnd),
+            };
+        }
         Ok(match event {
             Event::MessageStart { id, model, usage } => {
                 let mut deltas = vec![Delta::Start { id, model }];

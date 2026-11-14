@@ -262,3 +262,23 @@ fn whole_replies_report_what_they_could_not_keep() {
         Some(isonomic_model_protocol::StopReason::Refusal)
     );
 }
+
+#[test]
+fn a_closing_frame_after_an_error_is_accepted_and_anything_else_is_not() {
+    let error = "data: {\"error\":{\"message\":\"boom\",\"type\":\"server_error\"}}\n\n";
+    let mut decoder = StreamDecoder::<Chat>::new(Limits::default());
+    decoder.push(error.as_bytes()).unwrap();
+    assert!(decoder.push(b"data: [DONE]\n\n").unwrap().is_empty());
+    assert_eq!(
+        decoder.push(b"data: {\"choices\":[]}\n\n").unwrap_err(),
+        isonomic_model_protocol::ProtocolError::AfterEnd
+    );
+
+    let stop = "data: {\"type\":\"message_stop\"}\n\n";
+    let mut decoder = StreamDecoder::<Messages>::new(Limits::default());
+    decoder.push(stop.as_bytes()).unwrap();
+    assert!(decoder.push(stop.as_bytes()).unwrap().is_empty());
+    assert!(decoder
+        .push(b"data: {\"type\":\"message_start\",\"message\":{}}\n\n")
+        .is_err());
+}
