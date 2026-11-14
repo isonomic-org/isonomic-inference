@@ -10,7 +10,7 @@ Updated at every issue boundary. A successor session resumes from here.
 | 2 | #2 | inference-core: shared types, the memory gate and clocks | done |
 | 3 | #3 | library: model manifest and verified download | done |
 | 4 | #4 | llama: port the model server supervisor | done |
-| 5 | #5 | provider: the frozen trait and the local provider | not started |
+| 5 | #5 | provider: the frozen trait and the local provider | done |
 | 6 | #6 | xtask: smoke test against a real server | not started |
 | 7 | #7 | worker: extract the reusable lifecycle | not started |
 
@@ -19,9 +19,8 @@ criteria, Files in scope, Out of scope.
 
 ## Next
 
-1. provider: the frozen trait and the local provider (#5)
-2. xtask: smoke test against a real server (#6)
-3. worker: extract the reusable lifecycle (#7)
+1. xtask: smoke test against a real server (#6)
+2. worker: extract the reusable lifecycle (#7)
 
 ## How to resume
 

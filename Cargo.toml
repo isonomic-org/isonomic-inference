@@ -4,6 +4,7 @@ members = [
     "crates/inference-core",
     "crates/library",
     "crates/llama",
+    "crates/provider",
     "crates/testkit",
     "xtask",
 ]
