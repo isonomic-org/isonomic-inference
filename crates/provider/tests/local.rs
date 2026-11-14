@@ -12,7 +12,7 @@ use isonomic_inference_testkit::{
 use isonomic_llama::{LlamaConfig, LlamaError, LlamaSupervisor, ServerMode, ServiceState};
 use isonomic_provider::{
     ChatMessage, ChatRequest, EmbedRequest, GatewayError, InferenceProvider, LocalLlama,
-    ProviderHealth, ProviderId,
+    ProviderHealth, ProviderId, ReasoningChoice, ReasoningPolicy,
 };
 
 const SLEEPER: &str = "#!/bin/sh\nexec /bin/sleep 3600\n";
@@ -65,6 +65,7 @@ fn hello() -> ChatRequest {
         }],
         temperature: None,
         max_tokens: None,
+        reasoning: None,
     }
 }
 
@@ -256,4 +257,69 @@ async fn a_missing_model_file_and_a_tripped_breaker_are_typed_errors() {
         provider.typed_error(LlamaError::Degraded),
         GatewayError::ServerCrashed { .. }
     ));
+}
+
+/// Send one chat request asking for `choice`; returns the reasoning text,
+/// the answer text and the body the server received.
+async fn ask(
+    rig: &Rig,
+    policy: ReasoningPolicy,
+    choice: Option<ReasoningChoice>,
+) -> (String, String, serde_json::Value) {
+    let provider = rig.chat_provider().with_reasoning_policy(policy);
+    let mut request = hello();
+    request.reasoning = choice;
+    let mut stream = provider.chat(request).await.unwrap();
+    let (mut reasoning, mut answer) = (String::new(), String::new());
+    while let Some(item) = stream.next().await {
+        let chunk = item.unwrap();
+        reasoning.push_str(chunk.reasoning.as_deref().unwrap_or_default());
+        answer.push_str(&chunk.delta);
+    }
+    let sent = rig.server.requests_to("POST /v1/chat/completions");
+    let body = serde_json::from_str(&sent.last().unwrap().body).unwrap();
+    provider.supervisor().stop().await;
+    (reasoning, answer, body)
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_request_can_turn_reasoning_on_and_it_streams_apart_from_the_answer() {
+    let rig = Rig::new().await;
+    let on = Some(ReasoningChoice::On);
+    let (reasoning, answer, body) = ask(&rig, ReasoningPolicy::PerRequest, on).await;
+    assert_eq!(body["chat_template_kwargs"]["enable_thinking"], true);
+    assert_eq!(reasoning, "Thinking.");
+    assert_eq!(answer, "Hello world");
+    assert!(body.get("reasoning").is_none());
+
+    let off = Some(ReasoningChoice::Off);
+    let (reasoning, answer, body) = ask(&rig, ReasoningPolicy::PerRequest, off).await;
+    assert_eq!(body["chat_template_kwargs"]["enable_thinking"], false);
+    assert_eq!((reasoning.as_str(), answer.as_str()), ("", "Hello world"));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn an_unset_choice_keeps_the_launch_default() {
+    let rig = Rig::new().await;
+    let (reasoning, _, body) = ask(&rig, ReasoningPolicy::PerRequest, None).await;
+    assert!(body.get("chat_template_kwargs").is_none());
+    assert_eq!(reasoning, "");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn on_intel_macs_reasoning_stays_off_whatever_the_request_asks() {
+    let rig = Rig::new().await;
+    for choice in [None, Some(ReasoningChoice::On)] {
+        let (reasoning, answer, body) = ask(&rig, ReasoningPolicy::AlwaysOff, choice).await;
+        assert_eq!(body["chat_template_kwargs"]["enable_thinking"], false);
+        assert_eq!((reasoning.as_str(), answer.as_str()), ("", "Hello world"));
+    }
+    let intel = cfg!(all(target_os = "macos", target_arch = "x86_64"));
+    let expected = if intel {
+        ReasoningPolicy::AlwaysOff
+    } else {
+        ReasoningPolicy::PerRequest
+    };
+    assert_eq!(ReasoningPolicy::for_this_machine(), expected);
+    assert_eq!(rig.chat_provider().reasoning_policy(), expected);
 }

@@ -51,10 +51,11 @@ pub const DEFAULT_CONTEXT_SIZE: u32 = 8192;
 
 /// Whether the model may think before it answers.
 ///
-/// The frozen chat types carry no separate reasoning channel, and the server
-/// streams a reasoning model's thoughts outside the answer text. With
-/// reasoning on, a caller sees nothing until thinking ends, so it is off by
-/// default.
+/// This is the launch default. A request can override it per call
+/// (`ChatRequest::reasoning`, sent as the chat template's `enable_thinking`),
+/// except where the provider's policy keeps it off, as on Intel Macs. Off by
+/// default, because reasoning delays the answer and small models on slow
+/// machines can spend the whole reply on it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Reasoning {
     #[default]

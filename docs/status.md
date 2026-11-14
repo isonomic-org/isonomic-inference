@@ -3,6 +3,37 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## Reasoning on streamed chunks, with a per-request control (#28)
+
+Decision 4 is approved. Two additions to the frozen chat types, nothing
+else:
+
+- `ChatChunk::reasoning: Option<String>`: a reasoning delta, streamed apart
+  from the answer in `delta`. The local provider fills it from the server's
+  `reasoning_content` field (and from `reasoning`, which some servers use).
+- `ChatRequest::reasoning: Option<ReasoningChoice>` (off or on), layered on
+  the launch default from #21. The local provider sends it as the chat
+  template's `enable_thinking`; unset sends nothing and keeps the launch
+  default. It is not serialized as is.
+- `ReasoningPolicy` on `LocalLlama`: `PerRequest`, or `AlwaysOff`, which
+  sends reasoning off on every request whatever it asks. The default is
+  `AlwaysOff` on Intel Macs (a build for macOS on x86-64, which includes an
+  Intel build running under translation on Apple silicon) and `PerRequest`
+  elsewhere. `with_reasoning_policy` overrides it.
+- The fake server answers a request with reasoning on by streaming a
+  reasoning delta first, as the real server does.
+- Tests: `a_request_can_turn_reasoning_on_and_it_streams_apart_from_the_answer`,
+  `an_unset_choice_keeps_the_launch_default`,
+  `on_intel_macs_reasoning_stays_off_whatever_the_request_asks`, and two SSE
+  parsing tests.
+
+Deviations from the draft brief: it asked for the reasoning field on the
+streamed chunk "and on the final message". The frozen surface has no final
+message type, only the stream, so the field is on the chunk only. The
+per-request control was asked for by Omar with the approval of Decision 4;
+it is the second addition. The local provider does not use the protocol
+crate yet; it parses the stream as before.
+
 ## Protocol crate, client direction: messages and chat (#27)
 
 New crate `crates/protocol` (`isonomic-model-protocol`). Decision 3 is

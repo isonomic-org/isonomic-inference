@@ -31,11 +31,20 @@ pub(crate) fn parse_sse_line(line: &str) -> Result<SseEvent, GatewayError> {
         .as_str()
         .unwrap_or_default()
         .to_string();
+    // The server names the field `reasoning_content`; some others name it
+    // `reasoning`.
+    let delta_obj = &value["choices"][0]["delta"];
+    let reasoning = delta_obj["reasoning_content"]
+        .as_str()
+        .or_else(|| delta_obj["reasoning"].as_str())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
     let finish_reason = value["choices"][0]["finish_reason"]
         .as_str()
         .map(|s| s.to_string());
     Ok(SseEvent::Chunk(ChatChunk {
         delta,
+        reasoning,
         finish_reason,
     }))
 }
@@ -92,6 +101,27 @@ mod tests {
                 assert_eq!(c.delta, "Hi");
                 assert_eq!(c.finish_reason, None);
             }
+            other => panic!("expected chunk, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_a_reasoning_delta_apart_from_the_answer() {
+        for field in ["reasoning_content", "reasoning"] {
+            let line = format!(
+                r#"data: {{"choices":[{{"delta":{{"{field}":"Let me think."}},"finish_reason":null}}]}}"#
+            );
+            match parse_sse_line(&line).unwrap() {
+                SseEvent::Chunk(c) => {
+                    assert_eq!(c.delta, "");
+                    assert_eq!(c.reasoning.as_deref(), Some("Let me think."));
+                }
+                other => panic!("expected chunk, got {other:?}"),
+            }
+        }
+        let line = r#"data: {"choices":[{"delta":{"content":"Hi"},"finish_reason":null}]}"#;
+        match parse_sse_line(line).unwrap() {
+            SseEvent::Chunk(c) => assert_eq!(c.reasoning, None),
             other => panic!("expected chunk, got {other:?}"),
         }
     }

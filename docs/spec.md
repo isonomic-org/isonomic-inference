@@ -94,8 +94,8 @@ its API key variable (`LLAMA_API_KEY`).
 **Launch settings the supervisor owns:** where to listen, what to load,
 the mode, the context window (`-c`, 8,192 tokens by default), the number of
 request slots (`-np 1`) and, for chat, whether the model thinks before it
-answers (`-rea`, off by default, because the frozen chat types have no
-channel for reasoning).
+answers (`-rea`, off by default). That is the launch default; a request can
+override it (see provider).
 
 **One server, one job.** The llama.cpp server restricts an instance to
 embeddings when started with `--embeddings` and refuses embeddings otherwise.
@@ -108,7 +108,12 @@ serving both takes two instances.
   `cost`. One trait, N providers, OpenAI-compatible wire format end to end.
 - The local provider, `LocalLlama`:
   - streaming chat: the server's event stream is parsed into chunks as it
-    arrives, without buffering the full response;
+    arrives, without buffering the full response; a model's reasoning
+    arrives in `ChatChunk::reasoning`, apart from the answer in `delta`;
+  - per-request reasoning: `ChatRequest::reasoning` (off or on) is sent as
+    the chat template's `enable_thinking`, over the launch default; unset
+    keeps the launch default. `ReasoningPolicy::AlwaysOff` keeps reasoning
+    off for every request; it is the default on Intel Macs;
   - embeddings;
   - model listing with the capability of the server instance;
   - health from the worker's state;

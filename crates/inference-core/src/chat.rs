@@ -2,8 +2,9 @@
 //!
 //! These are the data types the frozen provider trait speaks (see the
 //! `provider` crate). The wire format is OpenAI-compatible end to end. Their
-//! shape is carried over unchanged from the earlier build; do not change it
-//! without asking.
+//! shape is carried over from the earlier build with one approved change
+//! (Decision 4, #28): reasoning on streamed chunks, with a per-request
+//! control. Do not change them without asking.
 
 use serde::{Deserialize, Serialize};
 
@@ -38,6 +39,14 @@ pub struct ChatMessage {
     pub content: String,
 }
 
+/// Whether a request wants the model to reason before it answers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReasoningChoice {
+    Off,
+    On,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ChatRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -47,12 +56,22 @@ pub struct ChatRequest {
     pub temperature: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_tokens: Option<u32>,
+    /// Per-request reasoning, layered on the server's launch default.
+    /// `None` keeps the launch default. A provider may clamp it: the local
+    /// provider keeps reasoning off on Intel Macs. Not sent as is; each
+    /// provider translates it for its server.
+    #[serde(skip)]
+    pub reasoning: Option<ReasoningChoice>,
 }
 
 /// One streamed delta from a chat completion.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChatChunk {
+    /// Answer text.
     pub delta: String,
+    /// Reasoning text, streamed apart from the answer, when the model
+    /// reasons and the server reports it.
+    pub reasoning: Option<String>,
     pub finish_reason: Option<String>,
 }
 
@@ -89,9 +108,11 @@ mod tests {
             }],
             temperature: None,
             max_tokens: Some(16),
+            reasoning: Some(ReasoningChoice::On),
         };
         let json = serde_json::to_value(&req).unwrap();
         assert!(json.get("model").is_none());
+        assert!(json.get("reasoning").is_none(), "providers translate it");
         assert!(json.get("temperature").is_none());
         assert_eq!(json["max_tokens"], 16);
         assert_eq!(json["messages"][0]["role"], "user");

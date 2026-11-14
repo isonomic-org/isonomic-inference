@@ -1,6 +1,8 @@
 //! A fake model server: the HTTP surface of the llama.cpp server that this
 //! workspace uses (`/health`, `/v1/chat/completions` as an event stream,
-//! `/v1/embeddings`), running in the test process on a loopback port.
+//! `/v1/embeddings`), running in the test process on a loopback port. A chat
+//! request that turns reasoning on (`chat_template_kwargs.enable_thinking`)
+//! is answered with a reasoning delta first.
 
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -111,6 +113,7 @@ impl Drop for FakeModelServer {
     }
 }
 
+const SSE_REASONING: &str = "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"Thinking.\"},\"finish_reason\":null}]}\n\n";
 const SSE_FIRST: &str =
     "data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"},\"finish_reason\":null}]}\n\n";
 const SSE_REST: &str = concat!(
@@ -203,6 +206,12 @@ async fn serve(mut sock: TcpStream, state: Arc<State>) {
             let head = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n\
                         Connection: close\r\n\r\n";
             let _ = sock.write_all(head.as_bytes()).await;
+            // Like the real server: a request that turns reasoning on gets
+            // the model's reasoning first, in its own field.
+            let body = String::from_utf8_lossy(&buf[header_end..]);
+            if body.replace(' ', "").contains("\"enable_thinking\":true") {
+                let _ = sock.write_all(SSE_REASONING.as_bytes()).await;
+            }
             let _ = sock.write_all(SSE_FIRST.as_bytes()).await;
             let _ = sock.flush().await;
             wait_clear(&state, &state.hold_stream).await;
