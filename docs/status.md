@@ -3,6 +3,43 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## xtask: smoke, models, fetch (#6)
+
+- `cargo xtask smoke --server <path> --model <gguf>` starts the real server
+  through the same supervisor and provider the engine will use, runs one
+  chat completion and one embedding (a second launch, in embedding mode),
+  checks that a request without the secret is refused, and prints a report:
+  versions, load time, time to first token, tokens per second, and the last
+  log lines on failure.
+- `cargo xtask models` lists the manifest. `cargo xtask fetch <id>` downloads
+  and verifies one model. These two are additions to the brief; `fetch` is
+  how a draft hash gets confirmed and how a model for the smoke test is
+  obtained.
+
+Smoke run, 2026-11-14, in the build sandbox (Linux x86_64): PASS.
+
+```
+server version     version: 1.0.0-dev (build 1, commit 32bdc3a) | built with GNU 13.3.0 for Linux x86_64
+chat       load 0.26 s · secret enforced: yes (request without it: 401) · 32 tokens · finish: length
+embedding  load 0.25 s · 1 × 64 · ok
+```
+
+What that run proves and what it does not:
+
+- The server was a real llama.cpp server, built from source at commit
+  32bdc3a. The command line, the API key in the environment, the 401
+  without it, `/health`, the event stream and embedding mode all behave as
+  this repo assumes.
+- **The model was synthetic**: a 17 MB llama-architecture file with random
+  weights and a real vocabulary, because the sandbox cannot reach the model
+  host. Its speed and its output mean nothing. A run with a real model on
+  the Intel test machine is still needed for a tokens-per-second number.
+
+Deviation:
+
+- **Tokens per second counts stream chunks.** The frozen chunk type carries
+  no usage figures. The server sends one token per chunk in practice.
+
 ## provider (#5)
 
 - The provider trait is carried over unchanged, with `ChatStream` and
