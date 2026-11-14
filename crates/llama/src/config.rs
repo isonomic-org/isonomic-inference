@@ -1,13 +1,19 @@
-//! Configuration and errors for the llama.cpp server worker.
+//! Configuration for the llama.cpp server worker, and its translation into
+//! a worker spec.
 
 use std::ffi::OsString;
 use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use isonomic_inference_core::RamDenial;
+use isonomic_worker::{restart_backoff_secs, HttpProbe, SecretMode, WorkerError, WorkerSpec};
 
-use crate::state::restart_backoff_secs;
+/// Name of the worker in log lines.
+pub const WORKER_NAME: &str = "llama-server";
+
+/// The server's health endpoint. It answers 503 while the model is loading
+/// and 200 once it is ready, and is public even when an API key is set.
+pub const HEALTH_PATH: &str = "/health";
 
 /// Environment variable the llama.cpp server reads its API key from. Passing
 /// the key this way keeps it out of the process list.
@@ -109,61 +115,69 @@ impl LlamaConfig {
 
     /// The server command line for a launch on `addr`.
     pub fn server_args(&self, addr: SocketAddr) -> Vec<OsString> {
-        let mut args: Vec<OsString> = vec![
-            "--host".into(),
-            addr.ip().to_string().into(),
-            "--port".into(),
-            addr.port().to_string().into(),
-            "-m".into(),
-            self.model_path.clone().into_os_string(),
-        ];
-        if self.mode == ServerMode::Embedding {
-            args.push("--embeddings".into());
-        }
+        let mut args = owned_args(addr, &self.model_path, self.mode);
         args.extend(self.extra_args.iter().map(OsString::from));
         args
     }
 
+    /// This configuration as a worker spec.
+    pub fn to_spec(&self) -> WorkerSpec {
+        let model = self.model_path.clone();
+        let mode = self.mode;
+        let mut spec = WorkerSpec::new(
+            WORKER_NAME,
+            self.binary_path.clone(),
+            self.model_path.clone(),
+            move |addr| owned_args(addr, &model, mode),
+            HttpProbe::get(HEALTH_PATH),
+        );
+        spec.extra_args = self.extra_args.clone();
+        spec.reserved_args = RESERVED_ARGS.iter().map(|a| a.to_string()).collect();
+        spec.secret = match self.api_key {
+            ApiKeyMode::PerLaunch => SecretMode::PerLaunch {
+                env_var: API_KEY_ENV.to_string(),
+            },
+            ApiKeyMode::Disabled => SecretMode::Disabled,
+        };
+        spec.env = self.env.clone();
+        spec.env_allow_list = ENV_ALLOW_LIST.iter().map(|n| n.to_string()).collect();
+        spec.port = self.port;
+        spec.idle_unload = self.idle_unload;
+        spec.start_timeout = self.start_timeout;
+        spec.probe_interval = self.probe_interval;
+        spec.steady_probe_interval = self.steady_probe_interval;
+        spec.probe_timeout = self.probe_timeout;
+        spec.stop_grace = self.stop_grace;
+        spec.backoff = self.backoff;
+        spec
+    }
+
     /// Refuse a configuration that would widen the worker's environment or
     /// take over an argument the supervisor owns.
-    pub fn validate(&self) -> Result<(), LlamaError> {
-        for (name, _) in &self.env {
-            if !ENV_ALLOW_LIST.contains(&name.as_str()) || name == API_KEY_ENV {
-                return Err(LlamaError::EnvNotAllowed(name.clone()));
-            }
-        }
-        for arg in &self.extra_args {
-            let name = arg.split('=').next().unwrap_or(arg);
-            if RESERVED_ARGS.contains(&name) {
-                return Err(LlamaError::ReservedArg(arg.clone()));
-            }
-        }
-        Ok(())
+    pub fn validate(&self) -> Result<(), WorkerError> {
+        self.to_spec().validate()
     }
+}
+
+/// The arguments the supervisor owns: where to listen, what to load, and
+/// what the instance is for.
+fn owned_args(addr: SocketAddr, model: &Path, mode: ServerMode) -> Vec<OsString> {
+    let mut args: Vec<OsString> = vec![
+        "--host".into(),
+        addr.ip().to_string().into(),
+        "--port".into(),
+        addr.port().to_string().into(),
+        "-m".into(),
+        model.as_os_str().to_owned(),
+    ];
+    if mode == ServerMode::Embedding {
+        args.push("--embeddings".into());
+    }
+    args
 }
 
 fn default_backoff(attempt: u32) -> Duration {
     Duration::from_secs(restart_backoff_secs(attempt))
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum LlamaError {
-    #[error("memory gate refused start: {0}")]
-    RamDenied(RamDenial),
-    #[error("llama-server is degraded (circuit breaker tripped); see last_logs()")]
-    Degraded,
-    #[error("llama-server exited during startup; see last_logs()")]
-    StartFailed,
-    #[error("llama-server failed to become healthy within {0:?}")]
-    StartTimeout(Duration),
-    #[error("failed to spawn llama-server: {0}")]
-    Spawn(std::io::Error),
-    #[error("environment variable {0} is not on the worker allow-list")]
-    EnvNotAllowed(String),
-    #[error("argument {0} is set by the supervisor and cannot be overridden")]
-    ReservedArg(String),
-    #[error("io error: {0}")]
-    Io(#[from] std::io::Error),
 }
 
 #[cfg(test)]
@@ -230,7 +244,7 @@ mod tests {
         for name in ["DYLD_INSERT_LIBRARIES", "LD_PRELOAD", "PATH", API_KEY_ENV] {
             cfg.env = vec![(name.to_string(), "x".to_string())];
             match cfg.validate() {
-                Err(LlamaError::EnvNotAllowed(got)) => assert_eq!(got, name),
+                Err(WorkerError::EnvNotAllowed(got)) => assert_eq!(got, name),
                 other => panic!("expected EnvNotAllowed for {name}, got {other:?}"),
             }
         }
@@ -242,7 +256,7 @@ mod tests {
             let mut cfg = config();
             cfg.extra_args = vec![arg.to_string()];
             assert!(
-                matches!(cfg.validate(), Err(LlamaError::ReservedArg(_))),
+                matches!(cfg.validate(), Err(WorkerError::ReservedArg(_))),
                 "{arg} must be refused"
             );
         }

@@ -1,6 +1,5 @@
-//! The llama.cpp server supervisor: lazy start, state, logs and the public
-//! handle. The background tasks that keep a running worker alive are in
-//! `tasks.rs`.
+//! The worker supervisor: lazy start, state, logs and the public handle.
+//! The background tasks that keep a running worker alive are in `tasks.rs`.
 
 use std::collections::VecDeque;
 use std::fmt;
@@ -14,20 +13,15 @@ use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 use tokio::process::Child;
 use tokio::sync::{watch, Mutex};
 
-use crate::config::{ApiKeyMode, LlamaConfig, LlamaError, API_KEY_ENV};
-use crate::health::probe_http;
 use crate::process::{self, Guardian};
+use crate::spec::{SecretMode, WorkerError, WorkerSpec};
 use crate::state::ServiceState;
 use crate::tasks;
 
 /// How many log lines are retained (last 50).
 pub const LOG_RING_CAPACITY: usize = 50;
 
-/// Path of the server's health endpoint. It answers 503 while the model is
-/// loading and 200 once it is ready.
-pub(crate) const HEALTH_PATH: &str = "/health";
-
-/// Where a running server can be reached, and the secret it expects.
+/// Where a running worker can be reached, and the secret it expects.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Endpoint {
     pub addr: SocketAddr,
@@ -53,7 +47,7 @@ impl fmt::Debug for Endpoint {
 }
 
 pub(crate) struct Shared {
-    pub config: LlamaConfig,
+    pub spec: WorkerSpec,
     pub gate: Arc<dyn RamGate>,
     pub clock: Arc<dyn Clock>,
     pub state_tx: watch::Sender<ServiceState>,
@@ -88,27 +82,26 @@ pub(crate) struct Launch {
     pub guardian: Guardian,
 }
 
-/// Supervises a single llama.cpp server worker. Dropping it tears the
-/// process group down.
-pub struct LlamaSupervisor {
+/// Supervises a single worker. Dropping it tears the process group down.
+pub struct WorkerSupervisor {
     shared: Arc<Shared>,
     control: Arc<Mutex<ControlState>>,
 }
 
-impl LlamaSupervisor {
-    pub fn new(config: LlamaConfig, gate: Arc<dyn RamGate>) -> Self {
-        Self::with_clock(config, gate, Arc::new(SystemClock))
+impl WorkerSupervisor {
+    pub fn new(spec: WorkerSpec, gate: Arc<dyn RamGate>) -> Self {
+        Self::with_clock(spec, gate, Arc::new(SystemClock))
     }
 
     /// Like [`new`](Self::new), with an injected clock. Every wait the
     /// supervisor makes goes through it.
-    pub fn with_clock(config: LlamaConfig, gate: Arc<dyn RamGate>, clock: Arc<dyn Clock>) -> Self {
+    pub fn with_clock(spec: WorkerSpec, gate: Arc<dyn RamGate>, clock: Arc<dyn Clock>) -> Self {
         let (state_tx, state_rx) = watch::channel(ServiceState::Stopped);
         let (live_tx, _) = watch::channel(0);
         let now = clock.now();
         Self {
             shared: Arc::new(Shared {
-                config,
+                spec,
                 gate,
                 clock,
                 state_tx,
@@ -139,13 +132,13 @@ impl LlamaSupervisor {
         self.shared.state_rx.clone()
     }
 
-    pub fn config(&self) -> &LlamaConfig {
-        &self.shared.config
+    pub fn spec(&self) -> &WorkerSpec {
+        &self.shared.spec
     }
 
-    /// Path to the GGUF model this supervisor serves.
+    /// Path to the model this supervisor serves.
     pub fn model_path(&self) -> &std::path::Path {
-        &self.shared.config.model_path
+        &self.shared.spec.model_path
     }
 
     /// Last ≤50 captured log lines (kept when the breaker trips).
@@ -177,10 +170,10 @@ impl LlamaSupervisor {
     /// Lazy start: ensure the worker is running and healthy, starting it on
     /// demand. Consults the memory gate before any spawn (refuses with a
     /// clear reason rather than thrashing). Returns where to reach it.
-    pub async fn ensure_running(&self) -> Result<Endpoint, LlamaError> {
+    pub async fn ensure_running(&self) -> Result<Endpoint, WorkerError> {
         self.touch();
         match self.state() {
-            ServiceState::Degraded => return Err(LlamaError::Degraded),
+            ServiceState::Degraded => return Err(WorkerError::Degraded),
             ServiceState::Healthy => {
                 if let Some(endpoint) = self.endpoint().await {
                     return Ok(endpoint);
@@ -192,7 +185,7 @@ impl LlamaSupervisor {
         let mut ctl = self.control.lock().await;
         // Re-check under the lock: another caller may have finished starting it.
         match *self.shared.state_tx.borrow() {
-            ServiceState::Degraded => return Err(LlamaError::Degraded),
+            ServiceState::Degraded => return Err(WorkerError::Degraded),
             ServiceState::Healthy => {
                 if let Some(endpoint) = ctl.endpoint.clone() {
                     return Ok(endpoint);
@@ -201,14 +194,14 @@ impl LlamaSupervisor {
             _ => {}
         }
 
-        self.shared.config.validate()?;
-        let model_bytes = tokio::fs::metadata(&self.shared.config.model_path)
+        self.shared.spec.validate()?;
+        let model_bytes = tokio::fs::metadata(&self.shared.spec.model_path)
             .await?
             .len();
         self.shared
             .gate
             .admit(model_bytes)
-            .map_err(LlamaError::RamDenied)?;
+            .map_err(WorkerError::RamDenied)?;
 
         self.shared.stopping.store(false, Ordering::SeqCst);
         let generation = self.shared.generation.load(Ordering::SeqCst);
@@ -230,21 +223,21 @@ impl LlamaSupervisor {
         ctl.pid = Some(pid);
         ctl.endpoint = Some(endpoint.clone());
 
-        let deadline = shared.clock.now() + shared.config.start_timeout;
+        let deadline = shared.clock.now() + shared.spec.start_timeout;
         let failure = loop {
             if probe(shared, &endpoint).await {
                 break None;
             }
             if child.try_wait().ok().flatten().is_some() {
-                break Some(LlamaError::StartFailed);
+                break Some(WorkerError::StartFailed);
             }
             if shared.clock.now() >= deadline {
                 // The worker is not reaped yet, so its group id is still ours.
                 process::kill_group_now(pid);
                 let _ = child.wait().await;
-                break Some(LlamaError::StartTimeout(shared.config.start_timeout));
+                break Some(WorkerError::StartTimeout(shared.spec.start_timeout));
             }
-            shared.clock.sleep(shared.config.probe_interval).await;
+            shared.clock.sleep(shared.spec.probe_interval).await;
         };
         if let Some(err) = failure {
             process::reap_group(&mut guardian, pid);
@@ -270,7 +263,7 @@ impl LlamaSupervisor {
             Arc::clone(&self.control),
             generation,
         ));
-        if let Some(idle) = shared.config.idle_unload {
+        if let Some(idle) = shared.spec.idle_unload {
             tokio::spawn(tasks::run_idle_watcher(
                 Arc::clone(shared),
                 Arc::clone(&self.control),
@@ -295,7 +288,7 @@ impl LlamaSupervisor {
     }
 }
 
-impl Drop for LlamaSupervisor {
+impl Drop for WorkerSupervisor {
     fn drop(&mut self) {
         self.shared.stopping.store(true, Ordering::SeqCst);
         self.shared.generation.fetch_add(1, Ordering::SeqCst);
@@ -312,21 +305,22 @@ pub(crate) fn touch(shared: &Shared) {
 
 /// Start the worker: a loopback address and a secret chosen for this launch,
 /// an environment built from the allow-list, its own process group.
-pub(crate) fn launch(shared: &Arc<Shared>) -> Result<Launch, LlamaError> {
-    let config = &shared.config;
-    config.validate()?;
-    let addr = process::alloc_loopback_addr(config.port)?;
-    let api_key = match config.api_key {
-        ApiKeyMode::PerLaunch => Some(process::new_secret()?),
-        ApiKeyMode::Disabled => None,
+pub(crate) fn launch(shared: &Arc<Shared>) -> Result<Launch, WorkerError> {
+    let spec = &shared.spec;
+    spec.validate()?;
+    let addr = process::alloc_loopback_addr(spec.port)?;
+    let mut env = spec.env.clone();
+    let api_key = match &spec.secret {
+        SecretMode::PerLaunch { env_var } => {
+            let key = process::new_secret()?;
+            env.push((env_var.clone(), key.clone()));
+            Some(key)
+        }
+        SecretMode::Disabled => None,
     };
-    let mut env = config.env.clone();
-    if let Some(key) = &api_key {
-        env.push((API_KEY_ENV.to_string(), key.clone()));
-    }
-    let args = config.server_args(addr);
+    let args = spec.command_line(addr);
     let mut spawned =
-        process::spawn_worker(&config.binary_path, &args, &env).map_err(LlamaError::Spawn)?;
+        process::spawn_worker(&spec.binary_path, &args, &env).map_err(WorkerError::Spawn)?;
     let pid = spawned.pid;
     if let Some(stdout) = spawned.child.stdout.take() {
         spawn_log_pump(Arc::clone(shared), stdout, "stdout");
@@ -336,7 +330,7 @@ pub(crate) fn launch(shared: &Arc<Shared>) -> Result<Launch, LlamaError> {
     }
     push_log(
         shared,
-        format!("spawned llama-server (pid {pid}) on {addr}"),
+        format!("spawned {} (pid {pid}) on {addr}", spec.name),
     );
     shared.pgid.store(pid, Ordering::SeqCst);
     shared.live_tx.send_replace(pid);
@@ -350,8 +344,8 @@ pub(crate) fn launch(shared: &Arc<Shared>) -> Result<Launch, LlamaError> {
 
 /// One bounded health probe against `endpoint`.
 pub(crate) async fn probe(shared: &Shared, endpoint: &Endpoint) -> bool {
-    let attempt = probe_http(endpoint.addr, HEALTH_PATH, endpoint.api_key.as_deref());
-    timeout(shared.clock.as_ref(), shared.config.probe_timeout, attempt)
+    let attempt = shared.spec.probe.check(endpoint);
+    timeout(shared.clock.as_ref(), shared.spec.probe_timeout, attempt)
         .await
         .unwrap_or(false)
 }

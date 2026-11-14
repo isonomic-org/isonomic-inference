@@ -1,6 +1,6 @@
 [package]
 name = "isonomic-llama"
-description = "Supervision of the llama.cpp server as a worker process: lazy start, probes, recovery, idle unload"
+description = "The llama.cpp server as a supervised model worker"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,17 +9,12 @@ publish.workspace = true
 
 [dependencies]
 isonomic-inference-core = { path = "../inference-core" }
-getrandom = { workspace = true }
-thiserror = { workspace = true }
-tokio = { workspace = true, features = ["process", "net", "sync", "io-util", "rt", "macros", "fs"] }
-
-[target.'cfg(unix)'.dependencies]
-libc = { workspace = true }
+isonomic-worker = { path = "../worker" }
 
 [dev-dependencies]
 isonomic-inference-testkit = { path = "../testkit" }
 tempfile = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread", "time"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
 
 [lints]
 workspace = true

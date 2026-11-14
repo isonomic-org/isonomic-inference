@@ -43,7 +43,7 @@ async fn terminate(shared: &Shared, pid: u32) {
     }
     process::stop_group(pid);
     let exited = live.wait_for(|current| *current != pid);
-    let grace = shared.config.stop_grace;
+    let grace = shared.spec.stop_grace;
     if timeout(shared.clock.as_ref(), grace, exited)
         .await
         .is_some()
@@ -100,7 +100,7 @@ pub(crate) async fn run_monitor(
         }
         push_log(
             &shared,
-            format!("llama-server exited unexpectedly ({status:?})"),
+            format!("{} exited unexpectedly ({status:?})", shared.spec.name),
         );
 
         let tripped = {
@@ -126,7 +126,7 @@ pub(crate) async fn run_monitor(
         }
 
         shared.state_tx.send_replace(ServiceState::Starting);
-        shared.clock.sleep((shared.config.backoff)(attempt)).await;
+        shared.clock.sleep((shared.spec.backoff)(attempt)).await;
         attempt = attempt.saturating_add(1);
         shared.restart_total.fetch_add(1, Ordering::SeqCst);
 
@@ -160,7 +160,7 @@ pub(crate) async fn run_monitor(
 
         // Probe until healthy (bounded). If it never comes up, or a stop came
         // in meanwhile, kill it and let the next loop iteration handle the exit.
-        let deadline = shared.clock.now() + shared.config.start_timeout;
+        let deadline = shared.clock.now() + shared.spec.start_timeout;
         let mut healthy = false;
         while shared.clock.now() < deadline {
             if superseded(&shared, generation) {
@@ -173,7 +173,7 @@ pub(crate) async fn run_monitor(
             if child.try_wait().ok().flatten().is_some() {
                 break; // already dead: handled by the next wait()
             }
-            shared.clock.sleep(shared.config.probe_interval).await;
+            shared.clock.sleep(shared.spec.probe_interval).await;
         }
         if healthy && !superseded(&shared, generation) {
             shared.state_tx.send_replace(ServiceState::Healthy);
@@ -195,10 +195,7 @@ pub(crate) async fn run_steady_probe(
 ) {
     let mut consecutive_failures: u32 = 0;
     loop {
-        shared
-            .clock
-            .sleep(shared.config.steady_probe_interval)
-            .await;
+        shared.clock.sleep(shared.spec.steady_probe_interval).await;
         if superseded(&shared, generation) || shared.stopping.load(Ordering::SeqCst) {
             return;
         }
@@ -253,7 +250,7 @@ pub(crate) async fn run_idle_watcher(
         if state == ServiceState::Healthy && idle_for >= idle {
             push_log(
                 &shared,
-                format!("idle for {idle:?}: unloading llama-server"),
+                format!("idle for {idle:?}: unloading {}", shared.spec.name),
             );
             stop_with(&shared, &control).await;
             return;
