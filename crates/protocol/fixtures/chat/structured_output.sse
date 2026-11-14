@@ -1,0 +1,10 @@
+data: {"id":"c6","object":"chat.completion.chunk","created":1,"model":"m","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"c6","object":"chat.completion.chunk","created":1,"model":"m","choices":[{"index":0,"delta":{"content":"{\"name\":\"Ana\","},"finish_reason":null}]}
+
+data: {"id":"c6","object":"chat.completion.chunk","created":1,"model":"m","choices":[{"index":0,"delta":{"content":"\"age\":31}"},"finish_reason":null}]}
+
+data: {"id":"c6","object":"chat.completion.chunk","created":1,"model":"m","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+

@@ -1,0 +1,81 @@
+{
+  "model": "m",
+  "turns": [
+    {
+      "role": "user",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "Weather in Oslo?"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "blocks": [
+        {
+          "type": "tool_use",
+          "id": "call_a",
+          "name": "get_weather",
+          "input": {
+            "city": "Oslo"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "blocks": [
+        {
+          "type": "tool_result",
+          "call_id": "call_a",
+          "content": [
+            {
+              "type": "text",
+              "text": "4C, rain"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "4C and raining in Oslo."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "And Paris and Rome?"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Current weather for a city.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "city"
+        ]
+      }
+    }
+  ],
+  "parallel_tool_calls": true,
+  "sampling": {
+    "max_output_tokens": 256
+  }
+}

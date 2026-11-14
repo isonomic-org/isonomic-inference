@@ -1,0 +1,25 @@
+{
+  "model": "m",
+  "turns": [
+    {
+      "role": "user",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "What is in this image?"
+        },
+        {
+          "type": "image",
+          "source": {
+            "kind": "blob",
+            "id": "img1",
+            "media_type": "image/png"
+          }
+        }
+      ]
+    }
+  ],
+  "sampling": {
+    "max_output_tokens": 128
+  }
+}

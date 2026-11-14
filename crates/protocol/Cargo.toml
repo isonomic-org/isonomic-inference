@@ -1,0 +1,17 @@
+[package]
+name = "isonomic-model-protocol"
+description = "One vocabulary for a conversation with a model, and pure translation to and from the wire formats programs use to talk to models"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# Pure: no network, files, processes or clocks. Every dependency must be on
+# the allow-list in deps-allow.txt; CI enforces it.
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

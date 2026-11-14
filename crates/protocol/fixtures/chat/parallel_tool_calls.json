@@ -1,0 +1,99 @@
+{
+  "conversation": "parallel_tool_calls",
+  "request": {
+    "model": "m",
+    "max_completion_tokens": 256,
+    "stream": true,
+    "stream_options": {
+      "include_usage": true
+    },
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Current weather for a city.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          }
+        }
+      }
+    ],
+    "parallel_tool_calls": true,
+    "messages": [
+      {
+        "role": "user",
+        "content": "Weather in Oslo?"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_a",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"Oslo\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_a",
+        "content": "4C, rain"
+      },
+      {
+        "role": "assistant",
+        "content": "4C and raining in Oslo."
+      },
+      {
+        "role": "user",
+        "content": "And Paris and Rome?"
+      }
+    ]
+  },
+  "deltas": [
+    {
+      "type": "start",
+      "id": "c3",
+      "model": "m"
+    },
+    {
+      "type": "tool_call_start",
+      "index": 0,
+      "id": "call_p",
+      "name": "get_weather"
+    },
+    {
+      "type": "tool_call_start",
+      "index": 1,
+      "id": "call_r",
+      "name": "get_weather"
+    },
+    {
+      "type": "tool_call_args",
+      "index": 0,
+      "fragment": "{\"city\": \"Paris\"}"
+    },
+    {
+      "type": "tool_call_args",
+      "index": 1,
+      "fragment": "{\"city\": \"Rome\"}"
+    },
+    {
+      "type": "stop",
+      "reason": "tool_use"
+    }
+  ],
+  "diags": [],
+  "end": "done"
+}

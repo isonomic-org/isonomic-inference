@@ -4,6 +4,7 @@ members = [
     "crates/inference-core",
     "crates/library",
     "crates/llama",
+    "crates/protocol",
     "crates/provider",
     "crates/testkit",
     "crates/worker",

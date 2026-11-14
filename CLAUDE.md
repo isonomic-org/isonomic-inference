@@ -43,6 +43,9 @@ must do, [docs/status.md](docs/status.md) for what is built, and
   changing either.
 - This repo must not depend on `isonomic-capsule`, `isonomic-sdk` or any UI
   crate.
+- `crates/protocol` is pure: no network, files, processes or clocks. Its
+  dependencies are on `crates/protocol/deps-allow.txt`, and CI checks them.
+  Call the wire formats messages, chat and responses; name no vendor.
 
 ## Before pushing
 

@@ -62,6 +62,25 @@ jobs:
             exit 1
           fi
 
+  protocol-deps:
+    name: protocol dependency allow-list
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: The protocol crate depends on allow-listed pure crates only
+        run: |
+          cargo tree -p isonomic-model-protocol -e normal --prefix none --format '{p}' \
+            | awk '{print $1}' | sort -u > /tmp/deps
+          grep -v -e '^#' -e '^$' crates/protocol/deps-allow.txt | sort -u > /tmp/allow
+          extra=$(comm -23 /tmp/deps /tmp/allow)
+          if [ -n "$extra" ]; then
+            echo "::error::crates not on crates/protocol/deps-allow.txt:"
+            echo "$extra"
+            exit 1
+          fi
+
   sizes:
     name: file sizes
     runs-on: ubuntu-latest

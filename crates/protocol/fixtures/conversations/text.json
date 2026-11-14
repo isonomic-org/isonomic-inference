@@ -1,0 +1,20 @@
+{
+  "model": "m",
+  "system": [
+    "You are terse."
+  ],
+  "turns": [
+    {
+      "role": "user",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "Say hi."
+        }
+      ]
+    }
+  ],
+  "sampling": {
+    "max_output_tokens": 64
+  }
+}

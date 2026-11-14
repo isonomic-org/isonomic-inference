@@ -1,0 +1,4 @@
+data: {"id":"c7","object":"chat.completion.chunk","created":1,"model":"m","choices":[{"index":0,"delta":{"role":"assistant","content":"Hi"},"finish_reason":null}]}
+
+data: {"error":{"message":"the model crashed","type":"server_error"}}
+

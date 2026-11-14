@@ -1,0 +1,35 @@
+{
+  "conversation": "text",
+  "request": {
+    "model": "m",
+    "max_tokens": 64,
+    "system": "You are terse.",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Say hi."
+      }
+    ],
+    "stream": true
+  },
+  "end": "truncated",
+  "deltas": [
+    {
+      "type": "start",
+      "id": "msg_8",
+      "model": "m"
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "input_tokens": 12,
+        "output_tokens": 1
+      }
+    },
+    {
+      "type": "text",
+      "text": "Hel"
+    }
+  ],
+  "diags": []
+}
