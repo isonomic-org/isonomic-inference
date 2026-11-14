@@ -1,0 +1,38 @@
+{
+  "model": "m",
+  "turns": [
+    {
+      "role": "user",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "Extract: Ana, 31."
+        }
+      ]
+    }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "name": "person",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "age": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "age"
+      ],
+      "additionalProperties": false
+    },
+    "strict": true
+  },
+  "sampling": {
+    "max_output_tokens": 128
+  }
+}

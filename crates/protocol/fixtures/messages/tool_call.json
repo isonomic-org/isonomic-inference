@@ -1,0 +1,129 @@
+{
+  "conversation": "tool_call",
+  "request": {
+    "model": "m",
+    "max_tokens": 256,
+    "messages": [
+      {
+        "role": "user",
+        "content": "Weather in Paris?"
+      }
+    ],
+    "stream": true,
+    "tools": [
+      {
+        "name": "get_weather",
+        "description": "Current weather for a city.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    ],
+    "tool_choice": {
+      "type": "auto"
+    }
+  },
+  "deltas": [
+    {
+      "type": "start",
+      "id": "msg_2",
+      "model": "m"
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "input_tokens": 30,
+        "output_tokens": 1
+      }
+    },
+    {
+      "type": "tool_call_start",
+      "index": 0,
+      "id": "toolu_1",
+      "name": "get_weather"
+    },
+    {
+      "type": "tool_call_args",
+      "index": 0,
+      "fragment": "{\"city\":"
+    },
+    {
+      "type": "tool_call_args",
+      "index": 0,
+      "fragment": " \"Paris\"}"
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "output_tokens": 20
+      }
+    },
+    {
+      "type": "stop",
+      "reason": "tool_use"
+    }
+  ],
+  "response": {
+    "id": "msg_2",
+    "type": "message",
+    "role": "assistant",
+    "model": "m",
+    "content": [
+      {
+        "type": "text",
+        "text": "Checking."
+      },
+      {
+        "type": "tool_use",
+        "id": "toolu_1",
+        "name": "get_weather",
+        "input": {
+          "city": "Paris"
+        }
+      }
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 30,
+      "output_tokens": 20
+    }
+  },
+  "reply": {
+    "id": "msg_2",
+    "model": "m",
+    "turn": {
+      "role": "assistant",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "Checking."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_1",
+          "name": "get_weather",
+          "input": {
+            "city": "Paris"
+          }
+        }
+      ]
+    },
+    "stop": "tool_use",
+    "usage": {
+      "input_tokens": 30,
+      "output_tokens": 20
+    },
+    "diags": []
+  },
+  "diags": [],
+  "end": "done"
+}

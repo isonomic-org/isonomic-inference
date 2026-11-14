@@ -1,0 +1,52 @@
+{
+  "conversation": "text",
+  "request": {
+    "model": "m",
+    "max_tokens": 64,
+    "system": "You are terse.",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Say hi."
+      }
+    ],
+    "stream": true
+  },
+  "deltas": [
+    {
+      "type": "start",
+      "id": "msg_7",
+      "model": "m"
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "input_tokens": 12,
+        "output_tokens": 1
+      }
+    },
+    {
+      "type": "error",
+      "error": {
+        "kind": "overloaded",
+        "message": "Overloaded",
+        "raw_type": "overloaded_error"
+      }
+    }
+  ],
+  "error_status": 429,
+  "error_body": {
+    "type": "error",
+    "error": {
+      "type": "rate_limit_error",
+      "message": "Slow down."
+    }
+  },
+  "error": {
+    "kind": "rate_limited",
+    "message": "Slow down.",
+    "raw_type": "rate_limit_error"
+  },
+  "diags": [],
+  "end": "done"
+}

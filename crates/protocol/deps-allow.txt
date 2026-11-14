@@ -1,0 +1,15 @@
+# Crates isonomic-model-protocol may depend on, directly or transitively
+# (normal dependencies only). Pure crates only: nothing that does I/O.
+isonomic-model-protocol
+serde
+serde_core
+serde_derive
+serde_json
+itoa
+memchr
+ryu
+zmij
+proc-macro2
+quote
+syn
+unicode-ident

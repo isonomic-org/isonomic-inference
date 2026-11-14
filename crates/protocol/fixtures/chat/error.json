@@ -1,0 +1,56 @@
+{
+  "conversation": "text",
+  "request": {
+    "model": "m",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are terse."
+      },
+      {
+        "role": "user",
+        "content": "Say hi."
+      }
+    ],
+    "max_completion_tokens": 64,
+    "stream": true,
+    "stream_options": {
+      "include_usage": true
+    }
+  },
+  "deltas": [
+    {
+      "type": "start",
+      "id": "c7",
+      "model": "m"
+    },
+    {
+      "type": "text",
+      "text": "Hi"
+    },
+    {
+      "type": "error",
+      "error": {
+        "kind": "server",
+        "message": "the model crashed",
+        "raw_type": "server_error"
+      }
+    }
+  ],
+  "error_status": 400,
+  "error_body": {
+    "error": {
+      "message": "messages must not be empty",
+      "type": "invalid_request_error",
+      "param": null,
+      "code": null
+    }
+  },
+  "error": {
+    "kind": "invalid_request",
+    "message": "messages must not be empty",
+    "raw_type": "invalid_request_error"
+  },
+  "diags": [],
+  "end": "done"
+}

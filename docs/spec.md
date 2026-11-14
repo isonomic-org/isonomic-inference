@@ -121,6 +121,44 @@ serving both takes two instances.
 Not here: the router, remote providers and the HTTP endpoint. They belong to
 the engine's model gateway.
 
+### protocol
+
+`isonomic-model-protocol`: one internal vocabulary for a conversation with a
+model, and translation between it and the wire formats programs use to talk
+to models. Three consumers: the engine's local model endpoint, its opt-in
+remote providers, and Chat, which needs reasoning streamed apart from the
+answer.
+
+- **Pure.** No network, files, processes or clocks; no HTTP client or
+  server. It depends only on serde, serde_json and the pure crates on
+  `crates/protocol/deps-allow.txt`, and on no other crate in this repo.
+- **One hub.** `Conversation` holds system instructions; turns of blocks
+  (text, reasoning, image, file, tool use, tool result, citation); tool
+  specs and tool choice; a response format (JSON Schema or an opaque
+  constraint); reasoning effort and budget; sampling limits; metadata. Fields
+  a format has and the hub lacks live in per-format extensions and are
+  written back on the way out.
+- **Lossless, or it says so.** Every lossy step returns a diagnostic.
+- **Images and files are references.** A blob is resolved by the caller;
+  inline data is size-capped.
+- **One effort table** maps reasoning levels and budgets between formats.
+- **Streams decode in constant memory**: only the current line and event are
+  held, each under a limit.
+- **Limits** on body size, JSON depth, turns, blocks, tools, schema size,
+  inline blobs, stream lines, stream events and streamed tool calls.
+
+Formats, each a `Wire` implementation:
+
+| Format | Emit (hub → request) | Decode (stream, response, error) | Accept (request → hub) | Encode (deltas → stream) |
+| --- | --- | --- | --- | --- |
+| messages | yes | yes | next | next |
+| chat | yes | yes | next | next |
+| responses | next | next | next | next |
+
+Fixtures in `crates/protocol/fixtures` cover every format × {text, single
+tool call, parallel tool calls, reasoning, image input, structured output,
+error, stop mid-stream}.
+
 ### Reserved
 
 `speech` and `image` will be workers on top of `worker`. They are not built.
@@ -159,5 +197,6 @@ Which test proves which item is listed in the worker entry of
 ## Out of scope
 
 The router, remote providers, API keys for remote services, the HTTP
-endpoint, the hardware profile, the real memory gate, binary bundling,
-speech, image and video models, and anything with a UI.
+endpoint (the protocol crate translates; the engine serves and calls), the
+hardware profile, the real memory gate, binary bundling, speech, image and
+video models, and anything with a UI.

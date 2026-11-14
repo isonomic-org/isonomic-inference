@@ -15,6 +15,7 @@ depends on nothing else in Isonomic.
 | `crates/library` | `isonomic-model-library` | The manifest of known models and checksum-verified downloads |
 | `crates/worker` | `isonomic-worker` | The lifecycle of a model worker process, for any kind of worker |
 | `crates/llama` | `isonomic-llama` | The llama.cpp server as a worker |
+| `crates/protocol` | `isonomic-model-protocol` | One vocabulary for a conversation with a model, and pure translation to and from the messages and chat wire formats |
 | `crates/provider` | `isonomic-provider` | The frozen provider trait and the local provider |
 | `crates/testkit` | `isonomic-inference-testkit` | Test support: a fake model server, stand-in binaries, clock helpers |
 | `xtask` | `xtask` | Repository tasks, including the smoke test |
@@ -64,6 +65,9 @@ cargo xtask fetch phi-3-mini-4k-instruct-q4 --dir models
 
 - This repo must not depend on `isonomic-capsule`, `isonomic-sdk` or any UI
   crate.
+- `crates/protocol` is pure: no network, files, processes or clocks, and
+  only the dependencies on `crates/protocol/deps-allow.txt`. CI enforces the
+  list.
 - The path to the model server binary is an input. This repo knows nothing
   about bundles.
 - The memory gate trait is defined here because this repo is its consumer.

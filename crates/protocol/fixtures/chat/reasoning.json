@@ -1,0 +1,80 @@
+{
+  "conversation": "reasoning",
+  "request": {
+    "model": "m",
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is 17 * 23?"
+      }
+    ],
+    "max_completion_tokens": 1024,
+    "stream": true,
+    "stream_options": {
+      "include_usage": true
+    },
+    "reasoning_effort": "medium"
+  },
+  "deltas": [
+    {
+      "type": "start",
+      "id": "c4",
+      "model": "m"
+    },
+    {
+      "type": "reasoning",
+      "text": "17 * 23 "
+    },
+    {
+      "type": "reasoning",
+      "text": "= 391."
+    },
+    {
+      "type": "text",
+      "text": "391"
+    },
+    {
+      "type": "stop",
+      "reason": "end_turn"
+    }
+  ],
+  "response": {
+    "id": "c4",
+    "object": "chat.completion",
+    "created": 1,
+    "model": "m",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "391",
+          "reasoning_content": "17 * 23 = 391."
+        },
+        "finish_reason": "stop"
+      }
+    ]
+  },
+  "reply": {
+    "id": "c4",
+    "model": "m",
+    "turn": {
+      "role": "assistant",
+      "blocks": [
+        {
+          "type": "reasoning",
+          "text": "17 * 23 = 391."
+        },
+        {
+          "type": "text",
+          "text": "391"
+        }
+      ]
+    },
+    "stop": "end_turn",
+    "usage": null,
+    "diags": []
+  },
+  "diags": [],
+  "end": "done"
+}

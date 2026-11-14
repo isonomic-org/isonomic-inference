@@ -1,0 +1,105 @@
+{
+  "conversation": "reasoning",
+  "request": {
+    "model": "m",
+    "max_tokens": 1024,
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is 17 * 23?"
+      }
+    ],
+    "stream": true,
+    "thinking": {
+      "type": "adaptive"
+    },
+    "output_config": {
+      "effort": "medium"
+    }
+  },
+  "deltas": [
+    {
+      "type": "start",
+      "id": "msg_4",
+      "model": "m"
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "input_tokens": 12,
+        "output_tokens": 1
+      }
+    },
+    {
+      "type": "reasoning",
+      "text": "17 * 23 = 391."
+    },
+    {
+      "type": "reasoning_signature",
+      "signature": "sig-abc"
+    },
+    {
+      "type": "text",
+      "text": "391"
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "output_tokens": 30
+      }
+    },
+    {
+      "type": "stop",
+      "reason": "end_turn"
+    }
+  ],
+  "response": {
+    "id": "msg_4",
+    "type": "message",
+    "role": "assistant",
+    "model": "m",
+    "content": [
+      {
+        "type": "thinking",
+        "thinking": "17 * 23 = 391.",
+        "signature": "sig-abc"
+      },
+      {
+        "type": "text",
+        "text": "391"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 12,
+      "output_tokens": 30
+    }
+  },
+  "reply": {
+    "id": "msg_4",
+    "model": "m",
+    "turn": {
+      "role": "assistant",
+      "blocks": [
+        {
+          "type": "reasoning",
+          "text": "17 * 23 = 391.",
+          "signature": "sig-abc"
+        },
+        {
+          "type": "text",
+          "text": "391"
+        }
+      ]
+    },
+    "stop": "end_turn",
+    "usage": {
+      "input_tokens": 12,
+      "output_tokens": 30
+    },
+    "diags": []
+  },
+  "diags": [],
+  "end": "done"
+}

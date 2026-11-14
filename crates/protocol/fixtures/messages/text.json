@@ -1,0 +1,86 @@
+{
+  "conversation": "text",
+  "request": {
+    "model": "m",
+    "max_tokens": 64,
+    "system": "You are terse.",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Say hi."
+      }
+    ],
+    "stream": true
+  },
+  "deltas": [
+    {
+      "type": "start",
+      "id": "msg_1",
+      "model": "m"
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "input_tokens": 12,
+        "output_tokens": 1
+      }
+    },
+    {
+      "type": "text",
+      "text": "Hi"
+    },
+    {
+      "type": "text",
+      "text": "!"
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "output_tokens": 3
+      }
+    },
+    {
+      "type": "stop",
+      "reason": "end_turn"
+    }
+  ],
+  "response": {
+    "id": "msg_1",
+    "type": "message",
+    "role": "assistant",
+    "model": "m",
+    "content": [
+      {
+        "type": "text",
+        "text": "Hi!"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 12,
+      "output_tokens": 3
+    }
+  },
+  "reply": {
+    "id": "msg_1",
+    "model": "m",
+    "turn": {
+      "role": "assistant",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "Hi!"
+        }
+      ]
+    },
+    "stop": "end_turn",
+    "usage": {
+      "input_tokens": 12,
+      "output_tokens": 3
+    },
+    "diags": []
+  },
+  "diags": [],
+  "end": "done"
+}

@@ -1,0 +1,20 @@
+{
+  "model": "m",
+  "turns": [
+    {
+      "role": "user",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "What is 17 * 23?"
+        }
+      ]
+    }
+  ],
+  "reasoning": {
+    "effort": "medium"
+  },
+  "sampling": {
+    "max_output_tokens": 1024
+  }
+}

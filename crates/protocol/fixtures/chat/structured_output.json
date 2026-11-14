@@ -1,0 +1,61 @@
+{
+  "conversation": "structured_output",
+  "deltas": [
+    {
+      "type": "start",
+      "id": "c6",
+      "model": "m"
+    },
+    {
+      "type": "text",
+      "text": "{\"name\":\"Ana\","
+    },
+    {
+      "type": "text",
+      "text": "\"age\":31}"
+    },
+    {
+      "type": "stop",
+      "reason": "end_turn"
+    }
+  ],
+  "request": {
+    "model": "m",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Extract: Ana, 31."
+      }
+    ],
+    "max_completion_tokens": 128,
+    "stream": true,
+    "stream_options": {
+      "include_usage": true
+    },
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "person",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "age": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "name",
+            "age"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    }
+  },
+  "diags": [],
+  "end": "done"
+}

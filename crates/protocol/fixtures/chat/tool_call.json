@@ -1,0 +1,113 @@
+{
+  "conversation": "tool_call",
+  "request": {
+    "model": "m",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Weather in Paris?"
+      }
+    ],
+    "max_completion_tokens": 256,
+    "stream": true,
+    "stream_options": {
+      "include_usage": true
+    },
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Current weather for a city.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          }
+        }
+      }
+    ],
+    "tool_choice": "auto"
+  },
+  "deltas": [
+    {
+      "type": "start",
+      "id": "c2",
+      "model": "m"
+    },
+    {
+      "type": "tool_call_start",
+      "index": 0,
+      "id": "call_1",
+      "name": "get_weather"
+    },
+    {
+      "type": "tool_call_args",
+      "index": 0,
+      "fragment": "{\"city\":"
+    },
+    {
+      "type": "tool_call_args",
+      "index": 0,
+      "fragment": " \"Paris\"}"
+    },
+    {
+      "type": "stop",
+      "reason": "tool_use"
+    }
+  ],
+  "response": {
+    "id": "c2",
+    "object": "chat.completion",
+    "created": 1,
+    "model": "m",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_1",
+              "type": "function",
+              "function": {
+                "name": "get_weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ]
+  },
+  "reply": {
+    "id": "c2",
+    "model": "m",
+    "turn": {
+      "role": "assistant",
+      "blocks": [
+        {
+          "type": "tool_use",
+          "id": "call_1",
+          "name": "get_weather",
+          "input": {
+            "city": "Paris"
+          }
+        }
+      ]
+    },
+    "stop": "tool_use",
+    "usage": null,
+    "diags": []
+  },
+  "diags": [],
+  "end": "done"
+}
