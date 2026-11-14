@@ -26,7 +26,7 @@ Updated at every issue boundary. A successor session resumes from here.
 | --- | --- | --- | --- |
 | 1 | #27 | Protocol crate: hub types, plus emit and decode for messages and chat | done |
 | 2 | #28 | Reasoning on streamed chunks, with a per-request control | done |
-| 3 | #29 | Commit Cargo.lock | waiting: a deploy key, to push with git from the Mac |
+| 3 | #29 | Commit Cargo.lock | done |
 | 4 | #32 | Protocol: accept and encode for messages and chat; cross-format tests; fuzz targets | done |
 | 5 | #33 | Protocol: the responses format, both directions | done, behind the `server` feature |
 | 6 | #36 | Protocol: align with the P1a brief (client trait, parse, server code behind a feature) | done |
@@ -44,7 +44,8 @@ criteria, Files in scope, Out of scope.
 - Merge rule: merge your own pull request once every check is green;
   shared-contract changes get `needs-master` and wait. Open issues labelled
   `master` come first.
-- Cargo.lock (#29) is waiting on the deploy key for git pushes from the Mac.
+- Cargo.lock (#29) is committed; pushes that carry it go through git from
+  the Mac with this repository's deploy key.
 - Recommended chat default per hardware profile (#39): Qwen3.5 0.8B on
   Intel Macs (CPU only), with Qwen3.5 2B or Phi-3 mini as an opt-in;
   Qwen3.5 4B everywhere else. The engine makes the choice.
