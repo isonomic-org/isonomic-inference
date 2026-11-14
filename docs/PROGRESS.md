@@ -16,6 +16,7 @@ Updated at every issue boundary. A successor session resumes from here.
 | 8 | #15 | CI: never cancel a run on main | done |
 | 9 | #17 | Ask the memory gate before every start | done |
 | 10 | #19 | Model library refresh, November 2026 | done |
+| 11 | #21 | Server launch defaults: context, slots, reasoning | done |
 
 Work the issues in this order. Each one is a brief: Context, Acceptance
 criteria, Files in scope, Out of scope.
