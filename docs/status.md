@@ -3,6 +3,30 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## inference-core (#2)
+
+- `ModelRef`, `ModelMetadata`, `License`, `Capability`.
+- The chat and embedding types the provider trait speaks, carried over
+  unchanged: `ChatRequest`, `ChatMessage`, `ChatChunk`, `EmbedRequest`,
+  `Embeddings`, `ModelInfo`, `ProviderHealth`, `ProviderId`, `CostEstimate`.
+- The memory gate: `RamGate` and `RamDenial` (required bytes, available
+  bytes, readable reason), taken from the earlier build as is, plus
+  `FixedGate`, a fixed-budget gate for tests and tools. The earlier
+  hardware-aware gate and the hardware profile are not here; the engine
+  owns them.
+- Clocks: the `Clock` trait, `SystemClock`, and `ManualClock`, which only
+  moves when a test advances it.
+
+Decisions:
+
+- **The gate keeps its earlier names**, `RamGate` and `RamDenial`, so the
+  engine's port of the real gate implements this trait without renaming.
+- **The provider's error type is not in this crate.** The brief lists
+  "errors" under inference-core. The frozen error enum wraps the HTTP
+  client's error type, so moving it here would either change its shape or
+  make the types crate depend on an HTTP client. It stays next to the trait
+  in the provider crate. The denial type is here.
+
 ## Workspace scaffold, docs and CI (#1)
 
 - A Cargo workspace with shared dependency versions, `cargo xtask` wired as
