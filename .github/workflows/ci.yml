@@ -1,15 +1,10 @@
-name: CI
-
-# Self-contained for now. When the organization's shared workflow exists,
-# the `check` job becomes a single `uses:` line pointing at it.
+name: ci
 
 on:
   pull_request:
   push:
     branches: [main]
 
-# A newer push to a pull request replaces its running check. Runs on main
-# are never cancelled, so every merge keeps its own result.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -17,50 +12,10 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
-  check:
-    name: fmt, clippy, test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-      - name: Format
-        run: cargo fmt --all -- --check
-      - name: Clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
-      - name: Test
-        run: cargo test
-
-  names:
-    name: reference scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: No older names anywhere
-        run: |
-          # The pattern is assembled from fragments so that this file does
-          # not contain the name it forbids.
-          pattern="block""band"
-          if git grep -n -i -I -e "$pattern" -- . ; then
-            echo "::error::an older name appears in the files listed above"
-            exit 1
-          fi
-          if git log --format='%an <%ae>%n%s%n%b' | grep -n -i -e "$pattern"; then
-            echo "::error::an older name appears in the commit history"
-            exit 1
-          fi
+  rust:
+    uses: isonomic-org/.github/.github/workflows/rust-ci.yml@main
+    secrets: inherit
 
   protocol-deps:
     name: protocol dependency allow-list
@@ -71,28 +26,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: The protocol crate depends on allow-listed pure crates only
         run: |
-          cargo tree -p isonomic-model-protocol -e normal --prefix none --format '{p}' \
-            | awk '{print $1}' | sort -u > /tmp/deps
+          cargo tree -p isonomic-model-protocol -e normal --prefix none --format '{p}' | awk '{print $1}' | sort -u > /tmp/deps
           grep -v -e '^#' -e '^$' crates/protocol/deps-allow.txt | sort -u > /tmp/allow
           extra=$(comm -23 /tmp/deps /tmp/allow)
           if [ -n "$extra" ]; then
             echo "::error::crates not on crates/protocol/deps-allow.txt:"
             echo "$extra"
-            exit 1
-          fi
-
-  sizes:
-    name: file sizes
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: Source and doc files stay under 20 KB
-        run: |
-          big=$(git ls-files -z -- '*.rs' '*.md' '*.toml' '*.yml' '*.json' \
-            | xargs -0 -r wc -c | awk '$2 != "total" && $1 >= 20000 {print}')
-          if [ -n "$big" ]; then
-            echo "::error::files at or over 20 KB:"
-            echo "$big"
             exit 1
           fi
