@@ -29,7 +29,8 @@ Updated at every issue boundary. A successor session resumes from here.
 | 3 | #29 | Commit Cargo.lock | waiting: a deploy key, to push with git from the Mac |
 | 4 | #32 | Protocol: accept and encode for messages and chat; cross-format tests; fuzz targets | done |
 | 5 | #33 | Protocol: the responses format, both directions | done, behind the `server` feature |
-| 6 | #36 | Protocol: align with the P1a brief (client trait, parse, server code behind a feature) | ready |
+| 6 | #36 | Protocol: align with the P1a brief (client trait, parse, server code behind a feature) | done |
+| 7 | #39 | Benchmark every chat model on the Intel test machine | done |
 
 Work the issues in this order. Each one is a brief: Context, Acceptance
 criteria, Files in scope, Out of scope.
@@ -44,6 +45,9 @@ criteria, Files in scope, Out of scope.
   shared-contract changes get `needs-master` and wait. Open issues labelled
   `master` come first.
 - Cargo.lock (#29) is waiting on the deploy key for git pushes from the Mac.
+- Recommended chat default per hardware profile (#39): Qwen3.5 0.8B on
+  Intel Macs (CPU only), with Qwen3.5 2B or Phi-3 mini as an opt-in;
+  Qwen3.5 4B everywhere else. The engine makes the choice.
 
 ## Next three issues
 
@@ -54,8 +58,8 @@ criteria, Files in scope, Out of scope.
 2. Move the local provider's stream parsing onto the protocol crate's chat
    decoder (the brief's follow-up after the gate).
 3. Run the fuzz targets under the address sanitizer once a nightly
-   toolchain is available, and benchmark every chat model on the Intel test
-   machine while it is idle.
+   toolchain is available. Re-run the Intel benchmark (#39) after a restart,
+   with swap empty, to replace its lower bounds.
 
 ## How to resume
 

@@ -3,6 +3,37 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## Chat models benchmarked on the Intel test machine (#39)
+
+Run on 2026-11-15 on the 2020 Intel MacBook Pro (i7-8850H, 6 cores, 16 GB),
+llama.cpp b12387 for Intel macOS (CPU only), `llama-bench -p 128 -n 64
+-t 6 -r 3`, every chat model in the manifest that fits the machine. Tokens
+per second, mean ± standard deviation over three runs:
+
+| Model | Size | Prompt (`pp128`) | Generation (`tg64`) |
+| --- | --- | --- | --- |
+| Qwen3.5 0.8B Q4_K_M | 0.5 GB | 51.3 ± 7.5 | 16.0 ± 5.9 |
+| Qwen3.5 2B Q4_K_M | 1.2 GB | 39.9 ± 7.2 | 4.2 ± 2.2 |
+| SmolLM3 3B Q4_K_M | 1.8 GB | 22.5 ± 0.4 | 4.1 ± 0.6 |
+| Phi-3 mini 4k Q4 | 2.2 GB | 20.9 ± 0.4 | 7.4 ± 0.3 |
+| Qwen3.5 4B Q4_K_M | 2.8 GB | 5.7 ± 2.7 | 1.8 ± 0.9 |
+| Gemma 4 E4B Q4_0 | 4.8 GB | 6.6 ± 3.6 | 1.9 ± 0.9 |
+| Qwen3.5 9B Q4_K_M | 5.3 GB | 2.5 ± 2.0 | 1.5 ± 0.7 |
+
+- **Not a clean idle run.** No one was using the machine, but the load
+  average stayed between 42 and 360 and swap was almost full (16.9 of
+  17.4 GB) from other apps. The numbers are lower bounds, and the larger
+  models suffer most: Qwen3.5 4B measured 3.2 tokens per second in the
+  gate run (#23) against 1.8 here. The ranking is still clear.
+- **Recommended chat default per hardware profile** (the engine owns the
+  profile and makes the choice):
+  - Intel Macs, CPU only: **Qwen3.5 0.8B**, the only model here above 10
+    tokens per second. Qwen3.5 2B or Phi-3 mini as an opt-in for better
+    answers at 4 to 7 tokens per second. Nothing at 4B or above for
+    interactive use.
+  - Every other profile: Qwen3.5 4B stays the default, as in the manifest.
+- Qwen3.6 35B-A3B was not run: it does not fit this machine.
+
 ## Reasoning on streamed chunks, with a per-request control (#28)
 
 Decision 4 is approved. Two additions to the frozen chat types, nothing
