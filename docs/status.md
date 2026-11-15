@@ -3,6 +3,16 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## Cargo.lock committed (#29)
+
+- `Cargo.lock` is committed and no longer ignored, so builds are
+  reproducible. Omar exempted lockfiles from the 20 KB rule; CI's size check
+  already covers only `*.rs`, `*.md`, `*.toml`, `*.yml` and `*.json`.
+- `cargo test --locked` passes.
+- Pushed with git from Omar's Mac, with a deploy key for this repository
+  (`push-isonomic-inference.sh`), because the lockfile is larger than the
+  other push paths handle well.
+
 ## Chat models benchmarked on the Intel test machine (#39)
 
 Run on 2026-11-15 on the 2020 Intel MacBook Pro (i7-8850H, 6 cores, 16 GB),

@@ -36,8 +36,9 @@ must do, [docs/status.md](docs/status.md) for what is built, and
 ## Code
 
 - Keep every source and doc file under 20 KB. Split by responsibility.
-  Larger files have failed to write through the tooling used here, which is
-  also why `Cargo.lock` is not committed.
+  Larger files have failed to write through the tooling used here.
+  Lockfiles are exempt: `Cargo.lock` is committed, and pushes that carry it
+  go through git.
 - Hermetic tests are the default: stand-in binaries, the fake model server
   and an injected clock (`ManualClock`). No test may depend on the machine's
   free memory, real timers, a GPU or the network. Tests move time with
