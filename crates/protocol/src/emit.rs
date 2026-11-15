@@ -59,9 +59,9 @@ impl Default for EmitOptions<'_> {
 
 /// An emitted request with every diagnostic its translation raised.
 #[derive(Debug, Clone, PartialEq)]
-pub struct Emitted<R> {
-    pub request: R,
-    pub diags: Vec<Diag>,
+pub(crate) struct Emitted<R> {
+    pub(crate) request: R,
+    pub(crate) diags: Vec<Diag>,
 }
 
 /// Inline media, resolved and encoded.

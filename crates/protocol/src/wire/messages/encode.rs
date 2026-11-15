@@ -6,9 +6,10 @@ use serde_json::{json, Value};
 
 use super::types::{ErrorBody, Response, WireUsage};
 use crate::conversation::{Block, Citation, StopReason, Usage};
-use crate::decode::{Delta, Reply};
+use crate::decode::Delta;
 use crate::diag::{ErrorKind, HubError, ProtocolError};
 use crate::encode::{frame, interleaved, status_of, EncodeOptions, Encoder};
+use crate::parse::Reply;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Open {

@@ -34,7 +34,7 @@ per-request control was asked for by Omar with the approval of Decision 4;
 it is the second addition. The local provider does not use the protocol
 crate yet; it parses the stream as before.
 
-## Protocol crate (#27, #32, #33)
+## Protocol crate (#27, #32, #33, #36)
 
 The protocol crate's status, lossy paths and deviations are in
 [status-protocol.md](status-protocol.md), newest first.

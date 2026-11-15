@@ -1,13 +1,15 @@
 //! Every hand-written fixture, for every format: emit matches the expected
 //! request, the stream decodes to the expected deltas however it is split,
-//! and whole responses and error bodies decode to the expected hub values.
+//! and whole responses parse and error bodies decode to the expected hub
+//! values.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
+mod common;
+
 use isonomic_model_protocol::{
-    Chat, Conversation, EmitOptions, Limits, Messages, ProtocolError, Responses, StreamDecoder,
-    Wire,
+    Chat, Conversation, EmitOptions, Limits, Messages, ProtocolError, StreamDecoder, WireClient,
 };
 use serde_json::{json, Value};
 
@@ -39,7 +41,7 @@ fn blobs() -> BTreeMap<String, Vec<u8>> {
     BTreeMap::from([("img1".to_string(), vec![0x89, b'P', b'N', b'G'])])
 }
 
-fn decode_all<W: Wire>(sse: &[u8], step: usize) -> (Vec<Value>, Result<(), ProtocolError>) {
+fn decode_all<W: WireClient>(sse: &[u8], step: usize) -> (Vec<Value>, Result<(), ProtocolError>) {
     let mut decoder = StreamDecoder::<W>::new(Limits::default());
     let mut deltas = Vec::new();
     for piece in sse.chunks(step) {
@@ -50,7 +52,7 @@ fn decode_all<W: Wire>(sse: &[u8], step: usize) -> (Vec<Value>, Result<(), Proto
     (deltas, decoder.finish())
 }
 
-fn check<W: Wire>() {
+fn check<W: WireClient>() {
     let blobs = blobs();
     for scenario in SCENARIOS {
         let dir = root().join(W::NAME);
@@ -68,11 +70,12 @@ fn check<W: Wire>() {
             blobs: &blobs,
             ..EmitOptions::default()
         };
-        let emitted = W::emit(&conv, &opts).unwrap_or_else(|e| panic!("{label}: emit: {e}"));
-        let request = serde_json::to_value(&emitted.request).unwrap();
+        let (request, diags) =
+            W::emit(&conv, &opts).unwrap_or_else(|e| panic!("{label}: emit: {e}"));
+        let request = serde_json::to_value(&request).unwrap();
         assert_eq!(request, fixture["request"], "{label}: request");
         assert_eq!(
-            serde_json::to_value(&emitted.diags).unwrap(),
+            serde_json::to_value(&diags).unwrap(),
             fixture["diags"],
             "{label}: diagnostics"
         );
@@ -103,10 +106,10 @@ fn check<W: Wire>() {
         // Whole responses.
         if let Some(response) = fixture.get("response") {
             let body = serde_json::to_vec(response).unwrap();
-            let reply = W::decode_response_body(&body, &Limits::default())
+            let (conv, diags) = W::parse_body(&body, &Limits::default())
                 .unwrap_or_else(|e| panic!("{label}: response: {e}"));
             assert_eq!(
-                serde_json::to_value(reply).unwrap(),
+                common::reply_json(&conv, &diags),
                 fixture["reply"],
                 "{label}: reply"
             );
@@ -144,7 +147,8 @@ fn an_error_body_in_no_known_shape_falls_back_to_the_status() {
     );
 }
 
+#[cfg(feature = "server")]
 #[test]
 fn responses_fixtures() {
-    check::<Responses>();
+    check::<isonomic_model_protocol::Responses>();
 }

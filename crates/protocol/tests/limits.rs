@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use isonomic_model_protocol::{
     Block, Chat, Conversation, EmitOptions, Limits, MediaRef, Messages, ProtocolError,
-    StreamDecoder, ToolSpec, Turn, Wire,
+    StreamDecoder, ToolSpec, Turn, WireClient,
 };
 use serde_json::{json, Value};
 
@@ -97,6 +97,7 @@ fn inline_blobs_are_capped() {
     };
     let conv = Conversation {
         turns: vec![Turn {
+            id: None,
             role: isonomic_model_protocol::Role::User,
             blocks: vec![Block::Image {
                 source: MediaRef::Blob {
@@ -122,21 +123,18 @@ fn body_size_is_capped_both_ways() {
         turns: vec![Turn::user_text("x".repeat(300))],
         ..Conversation::default()
     };
-    let emitted = Chat::emit(&conv, &EmitOptions::default()).unwrap();
-    assert_eq!(limit_of(limits.to_body(&emitted.request)), "body bytes");
+    let (request, _) = Chat::emit(&conv, &EmitOptions::default()).unwrap();
+    assert_eq!(limit_of(limits.to_body(&request)), "body bytes");
     let body = vec![b' '; 201];
-    assert_eq!(
-        limit_of(Chat::decode_response_body(&body, &limits)),
-        "body bytes"
-    );
+    assert_eq!(limit_of(Chat::parse_body(&body, &limits)), "body bytes");
     let deep = nested(9).to_string();
     assert_eq!(
-        limit_of(Messages::decode_response_body(deep.as_bytes(), &limits)),
+        limit_of(Messages::parse_body(deep.as_bytes(), &limits)),
         "json depth"
     );
 }
 
-fn push<W: Wire>(input: &str) -> Result<Vec<isonomic_model_protocol::Delta>, ProtocolError> {
+fn push<W: WireClient>(input: &str) -> Result<Vec<isonomic_model_protocol::Delta>, ProtocolError> {
     StreamDecoder::<W>::new(small()).push(input.as_bytes())
 }
 
@@ -184,8 +182,10 @@ fn open_blocks_per_stream_are_capped() {
     assert_eq!(limit_of(push::<Messages>(&stream)), "open stream blocks");
 }
 
+#[cfg(feature = "server")]
 #[test]
 fn accept_enforces_the_same_limits() {
+    use isonomic_model_protocol::WireServer;
     let limits = small();
     let body = |messages: Value| {
         serde_json::to_vec(&json!({ "model": "m", "max_tokens": 1, "messages": messages })).unwrap()
@@ -241,9 +241,10 @@ fn accept_enforces_the_same_limits() {
     ));
 }
 
+#[cfg(feature = "server")]
 #[test]
 fn responses_accept_and_decode_enforce_the_limits() {
-    use isonomic_model_protocol::Responses;
+    use isonomic_model_protocol::{Responses, WireServer};
     let limits = small();
     let image = serde_json::to_vec(
         &json!({ "model": "m", "input": [{ "role": "user", "content": [

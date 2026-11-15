@@ -2,11 +2,11 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::conversation::{Citation, StopReason, Turn, Usage};
+use crate::conversation::{Citation, StopReason, Usage};
 use crate::diag::{Diag, HubError, ProtocolError};
 use crate::limits::Limits;
 use crate::sse::SseParser;
-use crate::Wire;
+use crate::WireClient;
 
 /// One step of a streamed reply, in the hub's terms. Every format decodes to
 /// the same deltas.
@@ -76,25 +76,14 @@ pub trait Decoder {
     fn is_done(&self) -> bool;
 }
 
-/// A whole, non-streamed reply.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Reply {
-    pub id: Option<String>,
-    pub model: Option<String>,
-    pub turn: Turn,
-    pub stop: Option<StopReason>,
-    pub usage: Option<Usage>,
-    pub diags: Vec<Diag>,
-}
-
 /// Bytes of a server-sent-events stream in, deltas out.
-pub struct StreamDecoder<W: Wire> {
+pub struct StreamDecoder<W: WireClient> {
     parser: SseParser,
     decoder: W::Decoder,
     limits: Limits,
 }
 
-impl<W: Wire> StreamDecoder<W> {
+impl<W: WireClient> StreamDecoder<W> {
     pub fn new(limits: Limits) -> Self {
         Self {
             parser: SseParser::new(limits),

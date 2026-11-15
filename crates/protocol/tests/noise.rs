@@ -1,4 +1,5 @@
-//! Decoders and accept never panic on broken input: random bytes, and the fixture
+//! Decoders, parse and (with the server feature) accept never panic on
+//! broken input: random bytes, and the fixture
 //! streams with bytes flipped, dropped and repeated. Errors are fine.
 //!
 //! A deterministic generator keeps this hermetic; long fuzzing runs come
@@ -6,7 +7,7 @@
 
 use std::path::Path;
 
-use isonomic_model_protocol::{Chat, Limits, Messages, Responses, StreamDecoder, Wire};
+use isonomic_model_protocol::{Chat, Limits, Messages, StreamDecoder, WireClient};
 
 struct Rng(u64);
 
@@ -24,7 +25,7 @@ impl Rng {
     }
 }
 
-fn feed<W: Wire>(bytes: &[u8], step: usize) {
+fn feed<W: WireClient>(bytes: &[u8], step: usize) {
     let mut decoder = StreamDecoder::<W>::new(Limits::default());
     for piece in bytes.chunks(step.max(1)) {
         if decoder.push(piece).is_err() {
@@ -47,6 +48,21 @@ fn seeds(format: &str) -> Vec<Vec<u8>> {
     out.sort();
     out
 }
+
+/// Accept, where the server direction is built.
+#[cfg(feature = "server")]
+fn accept_any(format: &str, input: &[u8]) {
+    use isonomic_model_protocol::{Responses, WireServer};
+    let limits = Limits::default();
+    let _ = match format {
+        "messages" => Messages::accept_body(input, &limits).map(drop),
+        "chat" => Chat::accept_body(input, &limits).map(drop),
+        _ => Responses::accept_body(input, &limits).map(drop),
+    };
+}
+
+#[cfg(not(feature = "server"))]
+fn accept_any(_format: &str, _input: &[u8]) {}
 
 /// The fixture requests, as request bodies for accept.
 fn requests(format: &str) -> Vec<Vec<u8>> {
@@ -89,7 +105,7 @@ fn mutate(rng: &mut Rng, seed: &[u8]) -> Vec<u8> {
     bytes
 }
 
-fn shake<W: Wire>(format: &str, rounds: usize) {
+fn shake<W: WireClient>(format: &str, rounds: usize) {
     let mut seeds = seeds(format);
     seeds.extend(requests(format));
     let mut rng = Rng(0x9e37_79b9_7f4a_7c15);
@@ -99,8 +115,8 @@ fn shake<W: Wire>(format: &str, rounds: usize) {
         feed::<W>(&input, 1 + rng.below(64));
         let noise: Vec<u8> = (0..rng.below(512)).map(|_| rng.next() as u8).collect();
         feed::<W>(&noise, 1 + rng.below(64));
-        let _ = W::decode_response_body(&input, &Limits::default());
-        let _ = W::accept_body(&input, &Limits::default());
+        let _ = W::parse_body(&input, &Limits::default());
+        accept_any(format, &input);
         let _ = W::decode_error(Some(500), &input);
     }
 }
@@ -115,7 +131,8 @@ fn the_chat_decoder_survives_noise() {
     shake::<Chat>("chat", 4000);
 }
 
+#[cfg(feature = "server")]
 #[test]
 fn the_responses_decoder_survives_noise() {
-    shake::<Responses>("responses", 4000);
+    shake::<isonomic_model_protocol::Responses>("responses", 4000);
 }

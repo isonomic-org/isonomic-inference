@@ -2,10 +2,10 @@
 //! emit again without a panic.
 #![no_main]
 
-use isonomic_model_protocol::{Chat, EmitOptions, Limits, Messages, Responses, Wire};
+use isonomic_model_protocol::{Chat, EmitOptions, Limits, Messages, Responses, WireClient, WireServer};
 use libfuzzer_sys::fuzz_target;
 
-fn accept<W: Wire>(data: &[u8]) {
+fn accept<W: WireServer>(data: &[u8]) {
     if let Ok(accepted) = W::accept_body(data, &Limits::default()) {
         let opts = EmitOptions {
             blobs: &accepted.blobs,

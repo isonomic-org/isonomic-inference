@@ -1,14 +1,16 @@
 //! Translating across formats preserves meaning on the whole fixture set.
 //! Requests go messages → chat → messages and chat → messages → chat;
 //! streams decode in one format, encode in the other and decode again.
-//! The lossy steps on the way are exactly the expected ones.
+//! The lossy steps on the way are exactly the expected ones. Built with
+//! the `server` feature, because the round trips use accept.
+#![cfg(feature = "server")]
 
 use std::collections::BTreeMap;
 use std::path::Path;
 
 use isonomic_model_protocol::{
     Chat, Delta, DiagKind, EmitOptions, EncodeOptions, Encoder, Limits, Messages, Responses,
-    StopReason, StreamDecoder, Wire,
+    StopReason, StreamDecoder, WireServer,
 };
 use serde_json::Value;
 
@@ -30,7 +32,7 @@ fn read(format: &str, file: &str) -> String {
 }
 
 /// Request in format A → hub → format B → hub → format A.
-fn round_trip<A: Wire, B: Wire>(request: &Value) -> (Value, Vec<(DiagKind, String)>) {
+fn round_trip<A: WireServer, B: WireServer>(request: &Value) -> (Value, Vec<(DiagKind, String)>) {
     let limits = Limits::default();
     let mut diags = Vec::new();
     let first = A::accept_body(&serde_json::to_vec(request).unwrap(), &limits).unwrap();
@@ -39,27 +41,27 @@ fn round_trip<A: Wire, B: Wire>(request: &Value) -> (Value, Vec<(DiagKind, Strin
         blobs,
         ..EmitOptions::default()
     };
-    let there = B::emit(&first.conversation, &opts(&first.blobs)).unwrap();
-    let body = serde_json::to_vec(&there.request).unwrap();
+    let (there, there_diags) = B::emit(&first.conversation, &opts(&first.blobs)).unwrap();
+    let body = serde_json::to_vec(&there).unwrap();
     let second = B::accept_body(&body, &limits).unwrap();
-    let back = A::emit(&second.conversation, &opts(&second.blobs)).unwrap();
+    let (back, back_diags) = A::emit(&second.conversation, &opts(&second.blobs)).unwrap();
     for diag in first
         .diags
         .iter()
-        .chain(&there.diags)
+        .chain(&there_diags)
         .chain(&second.diags)
-        .chain(&back.diags)
+        .chain(&back_diags)
     {
         diags.push((diag.kind, diag.at.clone()));
     }
-    (serde_json::to_value(&back.request).unwrap(), diags)
+    (serde_json::to_value(&back).unwrap(), diags)
 }
 
 /// Request in format A → hub → format B → hub → format A, against the
 /// fixture, allowing exactly the expected losses. Only the messages format
 /// loses anything on this set: it has no schema name or strict flag, and
 /// can only turn parallel calls off.
-fn check_requests<A: Wire, B: Wire>() {
+fn check_requests<A: WireServer, B: WireServer>() {
     let schema = |a: &str| -> &'static str {
         match a {
             "responses" => "/text/format",
@@ -140,13 +142,13 @@ fn meaning(deltas: &[Delta]) -> Meaning {
     m
 }
 
-fn decode<W: Wire>(stream: &str) -> Vec<Delta> {
+fn decode<W: WireServer>(stream: &str) -> Vec<Delta> {
     StreamDecoder::<W>::new(Limits::default())
         .push(stream.as_bytes())
         .unwrap()
 }
 
-fn encode<W: Wire>(deltas: &[Delta]) -> String {
+fn encode<W: WireServer>(deltas: &[Delta]) -> String {
     let mut encoder = W::encoder(EncodeOptions {
         stream_usage: true,
         ..EncodeOptions::default()
@@ -156,7 +158,7 @@ fn encode<W: Wire>(deltas: &[Delta]) -> String {
     out
 }
 
-fn check_streams<A: Wire, B: Wire>() {
+fn check_streams<A: WireServer, B: WireServer>() {
     for scenario in SCENARIOS.iter().chain(&["error"]) {
         let original = decode::<A>(&read(A::NAME, &format!("{scenario}.sse")));
         let crossed = decode::<B>(&encode::<B>(&original));

@@ -7,9 +7,10 @@ use super::types::{
     WireUsage,
 };
 use crate::conversation::{Block, Citation, StopReason, Usage};
-use crate::decode::{Delta, Reply};
+use crate::decode::Delta;
 use crate::diag::{ErrorKind, HubError, ProtocolError};
 use crate::encode::{frame, status_of, EncodeOptions, Encoder};
+use crate::parse::Reply;
 
 /// Emits one chunk per delta, a finish chunk, an optional usage chunk and
 /// the done marker.

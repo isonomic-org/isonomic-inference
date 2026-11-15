@@ -1,24 +1,24 @@
 //! The messages format: system and turns of typed content blocks, tools
 //! with input schemas, and a stream of typed events.
 
+#[cfg(feature = "server")]
 mod accept;
 mod decode;
 mod emit;
+#[cfg(feature = "server")]
 mod encode;
 pub mod types;
 
 pub use decode::MessagesDecoder;
+#[cfg(feature = "server")]
 pub use encode::MessagesEncoder;
 
-use crate::accept::Accepted;
 use crate::conversation::Conversation;
-use crate::decode::Reply;
-use crate::diag::{HubError, ProtocolError};
-use crate::emit::{EmitOptions, Emitted};
-use crate::encode::EncodeOptions;
+use crate::diag::{Diag, HubError, ProtocolError};
+use crate::emit::EmitOptions;
 use crate::limits::Limits;
 use crate::sse::SseFrame;
-use crate::Wire;
+use crate::WireClient;
 
 /// The extension key and the format's name in diagnostics.
 pub const NAME: &str = "messages";
@@ -26,19 +26,22 @@ pub const NAME: &str = "messages";
 /// The messages format.
 pub struct Messages;
 
-impl Wire for Messages {
+impl WireClient for Messages {
     const NAME: &'static str = NAME;
     type Request = types::Request;
     type Response = types::Response;
     type Event = types::Event;
     type Decoder = MessagesDecoder;
-    type Encoder = MessagesEncoder;
 
     fn emit(
         conv: &Conversation,
         opts: &EmitOptions<'_>,
-    ) -> Result<Emitted<types::Request>, ProtocolError> {
-        emit::emit(conv, opts)
+    ) -> Result<(types::Request, Vec<Diag>), ProtocolError> {
+        emit::emit(conv, opts).map(|e| (e.request, e.diags))
+    }
+
+    fn parse(resp: types::Response) -> Result<(Conversation, Vec<Diag>), ProtocolError> {
+        decode::decode_response(resp).map(|reply| reply.into_conversation())
     }
 
     fn decoder(limits: Limits) -> MessagesDecoder {
@@ -49,24 +52,31 @@ impl Wire for Messages {
         decode::parse_event(frame, limits)
     }
 
-    fn decode_response(resp: types::Response) -> Result<Reply, ProtocolError> {
-        decode::decode_response(resp)
-    }
-
     fn decode_error(status: Option<u16>, body: &[u8]) -> HubError {
         decode::decode_error(status, body)
     }
+}
 
-    fn accept(req: types::Request, limits: &Limits) -> Result<Accepted, ProtocolError> {
+#[cfg(feature = "server")]
+impl crate::WireServer for Messages {
+    type Encoder = MessagesEncoder;
+
+    fn accept(
+        req: types::Request,
+        limits: &Limits,
+    ) -> Result<crate::accept::Accepted, ProtocolError> {
         accept::accept(req, limits)
     }
 
-    fn encoder(opts: EncodeOptions) -> MessagesEncoder {
+    fn encoder(opts: crate::encode::EncodeOptions) -> MessagesEncoder {
         MessagesEncoder::new(opts)
     }
 
-    fn encode_response(reply: &Reply, opts: &EncodeOptions) -> types::Response {
-        encode::encode_response(reply, opts)
+    fn encode_response(
+        conv: &Conversation,
+        opts: &crate::encode::EncodeOptions,
+    ) -> types::Response {
+        encode::encode_response(&crate::parse::Reply::of(conv), opts)
     }
 
     fn encode_error(error: &HubError) -> (u16, Vec<u8>) {

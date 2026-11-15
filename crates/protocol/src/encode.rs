@@ -68,7 +68,7 @@ mod tests {
     use super::*;
     use crate::wire::chat::Chat;
     use crate::wire::messages::Messages;
-    use crate::Wire;
+    use crate::{WireClient, WireServer};
 
     #[test]
     fn every_kind_survives_encode_then_decode() {

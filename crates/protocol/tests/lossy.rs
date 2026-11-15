@@ -5,14 +5,14 @@ use std::collections::BTreeMap;
 
 use isonomic_model_protocol::{
     Block, Chat, Citation, Conversation, Delta, DiagKind, Effort, EmitOptions, Limits, MediaRef,
-    Messages, ReasoningConfig, ResponseFormat, Role, StreamDecoder, Turn, Wire,
+    Messages, ReasoningConfig, ResponseFormat, Role, StreamDecoder, Turn, WireClient,
 };
 use serde_json::{json, Value};
 
-fn kinds<W: Wire>(conv: &Conversation, opts: &EmitOptions<'_>) -> Vec<(DiagKind, String)> {
+fn kinds<W: WireClient>(conv: &Conversation, opts: &EmitOptions<'_>) -> Vec<(DiagKind, String)> {
     W::emit(conv, opts)
         .unwrap()
-        .diags
+        .1
         .into_iter()
         .map(|d| (d.kind, d.at))
         .collect()
@@ -34,7 +34,11 @@ fn with_turns(turns: Vec<Turn>) -> Conversation {
 }
 
 fn turn(role: Role, blocks: Vec<Block>) -> Turn {
-    Turn { role, blocks }
+    Turn {
+        id: None,
+        role,
+        blocks,
+    }
 }
 
 fn d(kind: DiagKind, at: &str) -> (DiagKind, String) {
@@ -106,12 +110,8 @@ fn messages_lossy_paths() {
     });
     conv.ext.insert("messages", "model", json!("other"));
     conv.ext.insert("messages", "top_k", json!(5));
-    let emitted = Messages::emit(&conv, &opts()).unwrap();
-    let got: Vec<_> = emitted
-        .diags
-        .iter()
-        .map(|d| (d.kind, d.at.clone()))
-        .collect();
+    let (request, diags) = Messages::emit(&conv, &opts()).unwrap();
+    let got: Vec<_> = diags.iter().map(|d| (d.kind, d.at.clone())).collect();
     assert_eq!(
         got,
         [
@@ -126,7 +126,7 @@ fn messages_lossy_paths() {
             d(DiagKind::Dropped, "ext.model"),
         ]
     );
-    let request = serde_json::to_value(&emitted.request).unwrap();
+    let request = serde_json::to_value(&request).unwrap();
     assert_eq!(request["top_k"], 5, "extensions are written back");
     assert_eq!(request["model"], "m");
     assert_eq!(request["output_config"]["effort"], "high");
@@ -203,17 +203,17 @@ fn chat_lossy_paths() {
         blobs: &blobs,
         ..EmitOptions::default()
     };
-    let emitted = Chat::emit(&conv, &history).unwrap();
+    let (request, diags) = Chat::emit(&conv, &history).unwrap();
     assert_eq!(
-        emitted.diags[0].detail,
+        diags[0].detail,
         "the format has no place for a reasoning signature"
     );
-    let request = serde_json::to_value(&emitted.request).unwrap();
+    let request = serde_json::to_value(&request).unwrap();
     assert_eq!(request["messages"][0]["reasoning_content"], "r");
     assert_eq!(request["reasoning_effort"], "medium");
 }
 
-fn decode<W: Wire>(sse: &str) -> Vec<Delta> {
+fn decode<W: WireClient>(sse: &str) -> Vec<Delta> {
     StreamDecoder::<W>::new(Limits::default())
         .push(sse.as_bytes())
         .unwrap()
@@ -239,16 +239,16 @@ fn decoders_raise_notices_for_what_they_do_not_know() {
 #[test]
 fn whole_replies_report_what_they_could_not_keep() {
     let body = json!({"content": [{"type": "server_tool_use", "id": "s"}, {"type": "text", "text": "ok"}]});
-    let reply = Messages::decode_response(serde_json::from_value(body).unwrap()).unwrap();
-    assert_eq!(reply.diags[0].kind, DiagKind::Unrecognized);
-    assert_eq!(reply.turn.blocks, [Block::text("ok")]);
+    let (reply, diags) = Messages::parse(serde_json::from_value(body).unwrap()).unwrap();
+    assert_eq!(diags[0].kind, DiagKind::Unrecognized);
+    assert_eq!(reply.turns[0].blocks, [Block::text("ok")]);
 
     let body: Value = json!({"choices": [
         {"message": {"refusal": "no", "tool_calls": [{"id": "c", "type": "function",
             "function": {"name": "t", "arguments": "{bad"}}]}, "finish_reason": "stop"},
         {"message": {"content": "second"}}]});
-    let reply = Chat::decode_response(serde_json::from_value(body).unwrap()).unwrap();
-    let kinds: Vec<_> = reply.diags.iter().map(|d| d.kind).collect();
+    let (reply, diags) = Chat::parse(serde_json::from_value(body).unwrap()).unwrap();
+    let kinds: Vec<_> = diags.iter().map(|d| d.kind).collect();
     assert_eq!(
         kinds,
         [
@@ -258,7 +258,7 @@ fn whole_replies_report_what_they_could_not_keep() {
         ]
     );
     assert_eq!(
-        reply.stop,
+        reply.stop_reason,
         Some(isonomic_model_protocol::StopReason::Refusal)
     );
 }
@@ -283,7 +283,8 @@ fn a_closing_frame_after_an_error_is_accepted_and_anything_else_is_not() {
         .is_err());
 }
 
-fn accept<W: Wire>(body: Value) -> Vec<(DiagKind, String)> {
+#[cfg(feature = "server")]
+fn accept<W: isonomic_model_protocol::WireServer>(body: Value) -> Vec<(DiagKind, String)> {
     W::accept_body(&serde_json::to_vec(&body).unwrap(), &Limits::default())
         .unwrap()
         .diags
@@ -292,6 +293,7 @@ fn accept<W: Wire>(body: Value) -> Vec<(DiagKind, String)> {
         .collect()
 }
 
+#[cfg(feature = "server")]
 #[test]
 fn accept_lossy_paths() {
     let messages = json!({
@@ -335,6 +337,7 @@ fn accept_lossy_paths() {
     );
 }
 
+#[cfg(feature = "server")]
 #[test]
 fn responses_lossy_paths() {
     use isonomic_model_protocol::Responses;

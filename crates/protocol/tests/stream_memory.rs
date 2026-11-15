@@ -1,11 +1,11 @@
 //! Decoding a long stream holds constant memory: only the current line and
 //! event are buffered, and decoders keep no reply text.
 
-use isonomic_model_protocol::{Chat, Delta, Limits, Messages, StreamDecoder, Wire};
+use isonomic_model_protocol::{Chat, Delta, Limits, Messages, StreamDecoder, WireClient};
 
 /// Feed `events` copies of `event` in 4 KiB pieces; returns the largest
 /// buffer the decoder held and the text it decoded.
-fn run<W: Wire>(head: &str, event: &str, tail: &str, total: usize) -> (usize, usize) {
+fn run<W: WireClient>(head: &str, event: &str, tail: &str, total: usize) -> (usize, usize) {
     let mut stream = String::from(head);
     while stream.len() < total {
         stream.push_str(event);

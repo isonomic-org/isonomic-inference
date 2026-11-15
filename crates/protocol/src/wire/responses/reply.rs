@@ -6,9 +6,9 @@ use serde_json::{json, Value};
 use super::emit::parse_signature;
 use super::types::{InputDetails, OutputDetails, Response, WireUsage};
 use crate::conversation::{Block, Citation, StopReason, Usage};
-use crate::decode::Reply;
 use crate::diag::{ErrorKind, HubError};
 use crate::encode::{status_of, EncodeOptions};
+use crate::parse::Reply;
 
 pub(super) const INTERRUPTED: &str = "interrupted";
 

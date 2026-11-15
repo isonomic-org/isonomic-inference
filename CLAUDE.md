@@ -17,6 +17,16 @@ must do, [docs/status.md](docs/status.md) for what is built, and
 
 - One task per branch and pull request. Issues are briefs: Context,
   Acceptance criteria, Files in scope, Out of scope.
+- End every pull request with ready, blocked: …, failed: … or waiting: …,
+  and merge it yourself once every check is green. Exception: a change to a
+  shared contract (the session event schema once frozen, the SDK wire
+  interface, or isonomic-org/.github) gets the label `needs-master` and
+  waits for the master session to merge it. Merge the master session's CI
+  pull request in this repo once it is green.
+- Before each new task, handle any open issue labelled `master` first: that
+  is how the master session reaches this repo.
+- CI is the organization's shared Rust workflow plus this repo's protocol
+  dependency allow-list job.
 - A pull request is ready only when all checks are green.
 - Docs change in the same pull request as the behavior they describe.
   `docs/status.md` is newest first and states every deviation and deferral
