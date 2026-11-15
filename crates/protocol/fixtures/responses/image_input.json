@@ -1,0 +1,52 @@
+{
+  "conversation": "image_input",
+  "deltas": [
+    {
+      "type": "start",
+      "id": "resp_5",
+      "model": "m"
+    },
+    {
+      "type": "text",
+      "text": "A red "
+    },
+    {
+      "type": "text",
+      "text": "square."
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "input_tokens": 40,
+        "output_tokens": 9
+      }
+    },
+    {
+      "type": "stop",
+      "reason": "end_turn"
+    }
+  ],
+  "request": {
+    "model": "m",
+    "max_output_tokens": 128,
+    "stream": true,
+    "input": [
+      {
+        "type": "message",
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "What is in this image?"
+          },
+          {
+            "type": "input_image",
+            "image_url": "data:image/png;base64,iVBORw=="
+          }
+        ]
+      }
+    ]
+  },
+  "diags": [],
+  "end": "done"
+}

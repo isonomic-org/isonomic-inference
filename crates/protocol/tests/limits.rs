@@ -183,3 +183,89 @@ fn open_blocks_per_stream_are_capped() {
         .collect();
     assert_eq!(limit_of(push::<Messages>(&stream)), "open stream blocks");
 }
+
+#[test]
+fn accept_enforces_the_same_limits() {
+    let limits = small();
+    let body = |messages: Value| {
+        serde_json::to_vec(&json!({ "model": "m", "max_tokens": 1, "messages": messages })).unwrap()
+    };
+    let turn = json!({ "role": "user", "content": "hi" });
+    assert_eq!(
+        limit_of(Messages::accept_body(
+            &body(json!([turn, turn, turn, turn])),
+            &limits
+        )),
+        "turns"
+    );
+    assert_eq!(
+        limit_of(Messages::accept_body(&vec![b' '; 201], &limits)),
+        "body bytes"
+    );
+    let deep = body(
+        json!([{ "role": "user", "content": [{ "type": "tool_use", "id": "a", "name": "t", "input": nested(9) }] }]),
+    );
+    assert_eq!(
+        limit_of(Messages::accept_body(
+            &deep,
+            &Limits {
+                max_body_bytes: 1 << 20,
+                ..limits
+            }
+        )),
+        "json depth"
+    );
+    let image = body(json!([{ "role": "user", "content": [{ "type": "image",
+        "source": { "type": "base64", "media_type": "image/png", "data": "AAAAAAAA" } }] }]));
+    assert_eq!(
+        limit_of(Messages::accept_body(&image, &limits)),
+        "inline blob bytes"
+    );
+    let chat = serde_json::to_vec(
+        &json!({ "model": "m", "messages": [{ "role": "user", "content": [
+        { "type": "image_url", "image_url": { "url": "data:image/png;base64,AAAAAAAA" } }] }] }),
+    )
+    .unwrap();
+    assert_eq!(
+        limit_of(Chat::accept_body(&chat, &limits)),
+        "inline blob bytes"
+    );
+    let bad = serde_json::to_vec(
+        &json!({ "model": "m", "messages": [{ "role": "user", "content": [
+        { "type": "image_url", "image_url": { "url": "data:image/png;base64,!!!" } }] }] }),
+    )
+    .unwrap();
+    assert!(matches!(
+        Chat::accept_body(&bad, &Limits::default()),
+        Err(ProtocolError::Invalid(_))
+    ));
+}
+
+#[test]
+fn responses_accept_and_decode_enforce_the_limits() {
+    use isonomic_model_protocol::Responses;
+    let limits = small();
+    let image = serde_json::to_vec(
+        &json!({ "model": "m", "input": [{ "role": "user", "content": [
+        { "type": "input_image", "image_url": "data:image/png;base64,AAAAAAAA" }] }] }),
+    )
+    .unwrap();
+    assert_eq!(
+        limit_of(Responses::accept_body(&image, &limits)),
+        "inline blob bytes"
+    );
+    let turns = serde_json::to_vec(&json!({ "model": "m", "input": [
+        { "role": "user", "content": "a" }, { "role": "assistant", "content": "b" },
+        { "role": "user", "content": "c" }, { "role": "assistant", "content": "d" }] }))
+    .unwrap();
+    assert_eq!(limit_of(Responses::accept_body(&turns, &limits)), "turns");
+    let call = |i: usize| {
+        format!(
+        "data: {{\"type\":\"response.output_item.added\",\"output_index\":{i},\"item\":{{\"type\":\"function_call\",\"call_id\":\"c{i}\",\"name\":\"t\"}}}}\n\n")
+    };
+    let stream: String = (0..3).map(call).collect();
+    assert_eq!(
+        limit_of(push::<Responses>(&stream)),
+        "tool calls in a stream"
+    );
+}

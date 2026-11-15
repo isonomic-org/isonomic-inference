@@ -248,7 +248,7 @@ fn hub_usage(u: WireUsage) -> Usage {
     }
 }
 
-fn citation_of(raw: &Value) -> Citation {
+pub(super) fn citation_of(raw: &Value) -> Citation {
     let s = |key: &str| raw[key].as_str().map(str::to_string);
     Citation {
         url: s("url"),

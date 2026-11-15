@@ -1,0 +1,117 @@
+{
+  "conversation": "reasoning",
+  "request": {
+    "model": "m",
+    "input": [
+      {
+        "type": "message",
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "What is 17 * 23?"
+          }
+        ]
+      }
+    ],
+    "max_output_tokens": 1024,
+    "stream": true,
+    "reasoning": {
+      "effort": "medium"
+    }
+  },
+  "deltas": [
+    {
+      "type": "start",
+      "id": "resp_4",
+      "model": "m"
+    },
+    {
+      "type": "reasoning",
+      "text": "17 * 23 = 391."
+    },
+    {
+      "type": "reasoning_signature",
+      "signature": "{\"encrypted_content\":\"enc-abc\",\"id\":\"rs_0\"}"
+    },
+    {
+      "type": "text",
+      "text": "391"
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "input_tokens": 12,
+        "output_tokens": 30
+      }
+    },
+    {
+      "type": "stop",
+      "reason": "end_turn"
+    }
+  ],
+  "response": {
+    "id": "resp_4",
+    "object": "response",
+    "created_at": 1,
+    "status": "completed",
+    "model": "m",
+    "output": [
+      {
+        "type": "reasoning",
+        "id": "rs_0",
+        "summary": [
+          {
+            "type": "summary_text",
+            "text": "17 * 23 = 391."
+          }
+        ],
+        "encrypted_content": "enc-abc"
+      },
+      {
+        "type": "message",
+        "id": "msg_1",
+        "status": "completed",
+        "role": "assistant",
+        "content": [
+          {
+            "type": "output_text",
+            "text": "391",
+            "annotations": []
+          }
+        ]
+      }
+    ],
+    "usage": {
+      "input_tokens": 12,
+      "output_tokens": 30,
+      "total_tokens": 42
+    }
+  },
+  "reply": {
+    "id": "resp_4",
+    "model": "m",
+    "turn": {
+      "role": "assistant",
+      "blocks": [
+        {
+          "type": "reasoning",
+          "text": "17 * 23 = 391.",
+          "signature": "{\"encrypted_content\":\"enc-abc\",\"id\":\"rs_0\"}"
+        },
+        {
+          "type": "text",
+          "text": "391"
+        }
+      ]
+    },
+    "stop": "end_turn",
+    "usage": {
+      "input_tokens": 12,
+      "output_tokens": 30
+    },
+    "diags": []
+  },
+  "diags": [],
+  "end": "done"
+}

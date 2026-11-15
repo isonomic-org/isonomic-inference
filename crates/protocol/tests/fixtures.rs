@@ -6,7 +6,8 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use isonomic_model_protocol::{
-    Chat, Conversation, EmitOptions, Limits, Messages, ProtocolError, StreamDecoder, Wire,
+    Chat, Conversation, EmitOptions, Limits, Messages, ProtocolError, Responses, StreamDecoder,
+    Wire,
 };
 use serde_json::{json, Value};
 
@@ -141,4 +142,9 @@ fn an_error_body_in_no_known_shape_falls_back_to_the_status() {
         serde_json::to_value(error).unwrap(),
         json!({ "kind": "overloaded", "message": "<html>busy</html>" })
     );
+}
+
+#[test]
+fn responses_fixtures() {
+    check::<Responses>();
 }

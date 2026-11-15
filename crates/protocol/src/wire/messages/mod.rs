@@ -1,16 +1,21 @@
 //! The messages format: system and turns of typed content blocks, tools
 //! with input schemas, and a stream of typed events.
 
+mod accept;
 mod decode;
 mod emit;
+mod encode;
 pub mod types;
 
 pub use decode::MessagesDecoder;
+pub use encode::MessagesEncoder;
 
+use crate::accept::Accepted;
 use crate::conversation::Conversation;
 use crate::decode::Reply;
 use crate::diag::{HubError, ProtocolError};
 use crate::emit::{EmitOptions, Emitted};
+use crate::encode::EncodeOptions;
 use crate::limits::Limits;
 use crate::sse::SseFrame;
 use crate::Wire;
@@ -27,6 +32,7 @@ impl Wire for Messages {
     type Response = types::Response;
     type Event = types::Event;
     type Decoder = MessagesDecoder;
+    type Encoder = MessagesEncoder;
 
     fn emit(
         conv: &Conversation,
@@ -49,5 +55,21 @@ impl Wire for Messages {
 
     fn decode_error(status: Option<u16>, body: &[u8]) -> HubError {
         decode::decode_error(status, body)
+    }
+
+    fn accept(req: types::Request, limits: &Limits) -> Result<Accepted, ProtocolError> {
+        accept::accept(req, limits)
+    }
+
+    fn encoder(opts: EncodeOptions) -> MessagesEncoder {
+        MessagesEncoder::new(opts)
+    }
+
+    fn encode_response(reply: &Reply, opts: &EncodeOptions) -> types::Response {
+        encode::encode_response(reply, opts)
+    }
+
+    fn encode_error(error: &HubError) -> (u16, Vec<u8>) {
+        encode::encode_error(error)
     }
 }
