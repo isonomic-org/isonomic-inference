@@ -15,7 +15,7 @@ depends on nothing else in Isonomic.
 | `crates/library` | `isonomic-model-library` | The manifest of known models and checksum-verified downloads |
 | `crates/worker` | `isonomic-worker` | The lifecycle of a model worker process, for any kind of worker |
 | `crates/llama` | `isonomic-llama` | The llama.cpp server as a worker |
-| `crates/protocol` | `isonomic-model-protocol` | One vocabulary for a conversation with a model, and pure translation to and from the messages and chat wire formats |
+| `crates/protocol` | `isonomic-model-protocol` | One vocabulary for a conversation with a model, and pure translation to and from the messages, chat and responses wire formats |
 | `crates/provider` | `isonomic-provider` | The frozen provider trait and the local provider |
 | `crates/testkit` | `isonomic-inference-testkit` | Test support: a fake model server, stand-in binaries, clock helpers |
 | `xtask` | `xtask` | Repository tasks, including the smoke test |

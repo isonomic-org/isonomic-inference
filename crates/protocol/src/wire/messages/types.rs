@@ -156,6 +156,11 @@ pub struct Metadata {
 pub struct Response {
     #[serde(default)]
     pub id: Option<String>,
+    /// `"message"`.
+    #[serde(rename = "type", default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub role: Option<String>,
     #[serde(default)]
     pub model: Option<String>,
     #[serde(default)]
@@ -163,6 +168,8 @@ pub struct Response {
     #[serde(default)]
     pub stop_reason: Option<String>,
     #[serde(default)]
+    pub stop_sequence: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub usage: Option<WireUsage>,
 }
 

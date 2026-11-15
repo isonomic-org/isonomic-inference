@@ -1,0 +1,52 @@
+{
+  "conversation": "text",
+  "request": {
+    "model": "m",
+    "input": [
+      {
+        "type": "message",
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "Say hi."
+          }
+        ]
+      }
+    ],
+    "instructions": "You are terse.",
+    "max_output_tokens": 64,
+    "stream": true
+  },
+  "deltas": [
+    {
+      "type": "start",
+      "id": "resp_7",
+      "model": "m"
+    },
+    {
+      "type": "error",
+      "error": {
+        "kind": "server",
+        "message": "the model crashed",
+        "raw_type": "server_error"
+      }
+    }
+  ],
+  "error_status": 429,
+  "error_body": {
+    "error": {
+      "message": "Rate limit reached.",
+      "type": "rate_limit_error",
+      "param": null,
+      "code": "rate_limit_exceeded"
+    }
+  },
+  "error": {
+    "kind": "rate_limited",
+    "message": "Rate limit reached.",
+    "raw_type": "rate_limit_error"
+  },
+  "diags": [],
+  "end": "done"
+}

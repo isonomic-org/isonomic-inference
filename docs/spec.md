@@ -156,13 +156,19 @@ Formats, each a `Wire` implementation:
 
 | Format | Emit (hub → request) | Decode (stream, response, error) | Accept (request → hub) | Encode (deltas → stream) |
 | --- | --- | --- | --- | --- |
-| messages | yes | yes | next | next |
-| chat | yes | yes | next | next |
-| responses | next | next | next | next |
+| messages | yes | yes | yes | yes |
+| chat | yes | yes | yes | yes |
+| responses | yes | yes | yes | yes |
 
 Fixtures in `crates/protocol/fixtures` cover every format × {text, single
 tool call, parallel tool calls, reasoning, image input, structured output,
-error, stop mid-stream}.
+error, stop mid-stream}. Each fixture emits, decodes, accepts and encodes to
+the expected values, and translates across formats with only the listed
+losses. Accept turns inline media into blobs (`Accepted::blobs`) that the
+engine stores; emit reads blobs back through `BlobStore`. Encoders need a
+creation time and fallback names from the engine (`EncodeOptions`); the
+crate reads no clock. Fuzz targets for the decoders and accept live in
+`crates/protocol/fuzz`, outside the workspace.
 
 ### Reserved
 

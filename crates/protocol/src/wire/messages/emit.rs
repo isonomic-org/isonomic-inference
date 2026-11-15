@@ -140,7 +140,7 @@ pub(super) fn emit(
                 strict: tool.strict,
             })
             .collect(),
-        tool_choice: tool_choice(conv),
+        tool_choice: tool_choice(conv, &mut diags),
         thinking,
         output_config,
         metadata,
@@ -262,7 +262,14 @@ fn source_of(media: Media) -> Source {
     }
 }
 
-fn tool_choice(conv: &Conversation) -> Option<ToolChoice> {
+fn tool_choice(conv: &Conversation, diags: &mut Vec<Diag>) -> Option<ToolChoice> {
+    if conv.parallel_tool_calls == Some(true) {
+        diags.push(Diag::new(
+            DiagKind::Approximated,
+            "parallel_tool_calls",
+            "parallel calls are the format's default; it can only turn them off",
+        ));
+    }
     let disable = (conv.parallel_tool_calls == Some(false)).then_some(true);
     match &conv.tool_choice {
         None => disable.map(|d| ToolChoice::Auto {

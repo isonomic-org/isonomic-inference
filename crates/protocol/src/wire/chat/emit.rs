@@ -4,7 +4,7 @@ use serde_json::{json, Map, Value};
 
 use super::types::{
     FilePart, FunctionCall, FunctionDef, ImageUrl, Message, NamedFunction, Part, Request,
-    StreamOptions, Tool, ToolCall, ToolChoice, UserContent,
+    StreamOptions, TextContent, Tool, ToolCall, ToolChoice, UserContent,
 };
 use super::NAME;
 use crate::conversation::{
@@ -36,7 +36,7 @@ pub(super) fn emit(
         .system
         .iter()
         .map(|text| Message::System {
-            content: text.clone(),
+            content: TextContent::text(text),
         })
         .collect();
     for (t, turn) in conv.turns.iter().enumerate() {
@@ -159,7 +159,7 @@ fn user_turn(
                 }
                 out.push(Message::Tool {
                     tool_call_id: call_id.clone(),
-                    content: texts.join("\n"),
+                    content: TextContent::Text(texts.join("\n")),
                 });
             }
             _ => diags.push(Diag::new(
@@ -275,7 +275,8 @@ fn assistant_turn(turn: &Turn, t: usize, opts: &EmitOptions<'_>, diags: &mut Vec
         ));
     }
     Message::Assistant {
-        content: (!text.is_empty() || tool_calls.is_empty()).then(|| text.concat()),
+        content: (!text.is_empty() || tool_calls.is_empty())
+            .then(|| TextContent::Text(text.concat())),
         tool_calls,
         reasoning_content: (!reasoning.is_empty()).then(|| reasoning.concat()),
     }

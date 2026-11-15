@@ -1,0 +1,120 @@
+{
+  "conversation": "tool_call",
+  "request": {
+    "model": "m",
+    "input": [
+      {
+        "type": "message",
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "Weather in Paris?"
+          }
+        ]
+      }
+    ],
+    "max_output_tokens": 256,
+    "stream": true,
+    "tools": [
+      {
+        "type": "function",
+        "name": "get_weather",
+        "description": "Current weather for a city.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    ],
+    "tool_choice": "auto"
+  },
+  "deltas": [
+    {
+      "type": "start",
+      "id": "resp_2",
+      "model": "m"
+    },
+    {
+      "type": "tool_call_start",
+      "index": 0,
+      "id": "call_1",
+      "name": "get_weather"
+    },
+    {
+      "type": "tool_call_args",
+      "index": 0,
+      "fragment": "{\"city\":"
+    },
+    {
+      "type": "tool_call_args",
+      "index": 0,
+      "fragment": " \"Paris\"}"
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "input_tokens": 30,
+        "output_tokens": 20
+      }
+    },
+    {
+      "type": "stop",
+      "reason": "tool_use"
+    }
+  ],
+  "response": {
+    "id": "resp_2",
+    "object": "response",
+    "created_at": 1,
+    "status": "completed",
+    "model": "m",
+    "output": [
+      {
+        "type": "function_call",
+        "id": "fc_0",
+        "call_id": "call_1",
+        "name": "get_weather",
+        "arguments": "{\"city\":\"Paris\"}",
+        "status": "completed"
+      }
+    ],
+    "usage": {
+      "input_tokens": 30,
+      "output_tokens": 20,
+      "total_tokens": 50
+    }
+  },
+  "reply": {
+    "id": "resp_2",
+    "model": "m",
+    "turn": {
+      "role": "assistant",
+      "blocks": [
+        {
+          "type": "tool_use",
+          "id": "call_1",
+          "name": "get_weather",
+          "input": {
+            "city": "Paris"
+          }
+        }
+      ]
+    },
+    "stop": "tool_use",
+    "usage": {
+      "input_tokens": 30,
+      "output_tokens": 20
+    },
+    "diags": []
+  },
+  "diags": [],
+  "end": "done"
+}

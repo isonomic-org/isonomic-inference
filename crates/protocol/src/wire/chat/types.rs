@@ -17,7 +17,12 @@ pub struct Request {
     pub temperature: Option<f32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f32>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    /// A string or a list of strings on the wire.
+    #[serde(
+        default,
+        skip_serializing_if = "Vec::is_empty",
+        deserialize_with = "one_or_many"
+    )]
     pub stop: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stream: Option<bool>,
@@ -49,14 +54,18 @@ pub struct StreamOptions {
 #[serde(tag = "role", rename_all = "snake_case")]
 pub enum Message {
     System {
-        content: String,
+        content: TextContent,
+    },
+    /// Read as system instructions.
+    Developer {
+        content: TextContent,
     },
     User {
         content: UserContent,
     },
     Assistant {
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        content: Option<String>,
+        content: Option<TextContent>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         tool_calls: Vec<ToolCall>,
         /// Not in every server's schema; sent only when asked for.
@@ -65,8 +74,36 @@ pub enum Message {
     },
     Tool {
         tool_call_id: String,
-        content: String,
+        content: TextContent,
     },
+}
+
+/// Text, as a string or as a list of parts.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum TextContent {
+    Text(String),
+    Parts(Vec<Part>),
+}
+
+impl TextContent {
+    pub fn text(text: impl Into<String>) -> Self {
+        TextContent::Text(text.into())
+    }
+}
+
+fn one_or_many<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Vec<String>, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(String),
+        Many(Vec<String>),
+    }
+    Ok(match Option::<OneOrMany>::deserialize(d)? {
+        None => Vec::new(),
+        Some(OneOrMany::One(s)) => vec![s],
+        Some(OneOrMany::Many(v)) => v,
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -82,6 +119,7 @@ pub enum Part {
     Text { text: String },
     ImageUrl { image_url: ImageUrl },
     File { file: FilePart },
+    Refusal { refusal: String },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -150,11 +188,16 @@ pub struct NamedFunction {
 pub struct Response {
     #[serde(default)]
     pub id: Option<String>,
+    /// `"chat.completion"`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub object: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created: Option<u64>,
     #[serde(default)]
     pub model: Option<String>,
     #[serde(default)]
     pub choices: Vec<Choice>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub usage: Option<WireUsage>,
 }
 
@@ -169,43 +212,45 @@ pub struct Choice {
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct ReplyMessage {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub role: Option<String>,
     #[serde(default)]
     pub content: Option<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tool_calls: Vec<ToolCall>,
     /// Local servers name the reasoning field `reasoning_content`; some
     /// others name it `reasoning`. Both are read.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reasoning_content: Option<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reasoning: Option<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub refusal: Option<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub annotations: Vec<Value>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct WireUsage {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub prompt_tokens: Option<u64>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub completion_tokens: Option<u64>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub prompt_tokens_details: Option<PromptDetails>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub completion_tokens_details: Option<CompletionDetails>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct PromptDetails {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cached_tokens: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct CompletionDetails {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reasoning_tokens: Option<u64>,
 }
 

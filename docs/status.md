@@ -34,77 +34,10 @@ per-request control was asked for by Omar with the approval of Decision 4;
 it is the second addition. The local provider does not use the protocol
 crate yet; it parses the stream as before.
 
-## Protocol crate, client direction: messages and chat (#27)
+## Protocol crate (#27, #32, #33)
 
-New crate `crates/protocol` (`isonomic-model-protocol`). Decision 3 is
-approved; the code is written from each format's public reference
-documentation. Scope set by Omar: the hub types plus emit and decode for the
-messages and chat formats, with no I/O. Accept, encode and the responses
-format wait.
-
-- **Hub types** in `conversation.rs`; one effort table in `reasoning.rs`;
-  limits in `limits.rs`; event-stream framing in `sse.rs`; diagnostics and
-  error kinds in `diag.rs`.
-- **Emit** for both formats, with a diagnostic for every lossy step.
-- **Decode** for both formats: streams to deltas, whole responses to a
-  reply, error bodies to the hub's error kinds.
-- **Fixtures**: 8 scenarios × 2 formats, hand-written, in
-  `crates/protocol/fixtures`. Each emits the expected request, decodes its
-  stream to the expected deltas whole and split at 1, 2, 7 and 64 bytes,
-  and, where present, decodes its response and error body.
-- **Constant memory**: a 1 MB and a 4 MB stream hold the same peak buffer,
-  no larger than one event (`tests/stream_memory.rs`).
-- **Limits**: every limit has a test (`tests/limits.rs`).
-- **Stream edges**: a leading byte-order mark is skipped; after the end (the
-  closing frame or an in-stream error) a repeated closing frame is accepted
-  and any other event is an error.
-- **Dependencies**: a CI job checks the crate's dependency closure against
-  `crates/protocol/deps-allow.txt`.
-
-Lossy paths, each with a test in `tests/lossy.rs`:
-
-| Where | What happens | Diagnostic |
-| --- | --- | --- |
-| both, emit | no model named: sent empty | defaulted |
-| messages, emit | no output limit: `default_max_tokens` (4096) sent | defaulted |
-| messages, emit | citation without the format's own location, or with no text before it | dropped |
-| messages, emit | reasoning in a user turn; reasoning without a signature | dropped |
-| messages, emit | tool-result content other than text and images | dropped |
-| messages, emit | call ID outside `[A-Za-z0-9_-]`: rewritten, the same way for call and result | id mapped |
-| messages, emit | effort `minimal` sent as `low`, `max` as `high` | approximated |
-| messages, emit | response-format name and strict flag | dropped |
-| messages, emit | metadata keys other than `user_id` | dropped |
-| both, emit | an extension field that collides with a field the hub sets | dropped |
-| chat, emit | reasoning in an assistant turn (sent as `reasoning_content` only when `chat_reasoning_history` is on; the signature is always lost) | dropped |
-| chat, emit | citations, images and files in an assistant turn; tool use, reasoning and citations in a user turn | dropped |
-| chat, emit | a file by URL (the format takes files inline) | dropped |
-| chat, emit | an image in a tool result: moved to the user message after it | relocated |
-| chat, emit | tool results ahead of other content in the same turn | relocated |
-| chat, emit | several text blocks in a tool result or assistant turn: joined | approximated |
-| chat, emit | the error flag on a tool result | dropped |
-| chat, emit | no schema name: `response` sent | defaulted |
-| chat, emit | a budget without an effort: nearest effort; a budget beside an effort: dropped | approximated, dropped |
-| messages, decode | block, delta and event types the hub does not know | notice |
-| messages, reply | reply blocks other than text, reasoning and tool use | unrecognized |
-| chat, decode and reply | choices after the first | notice, dropped |
-| chat, reply | a refusal: kept as text, stop reason refusal | approximated |
-| chat, reply | tool arguments that are not JSON: kept as a string | approximated |
-| chat, decode | finish reason `stop` covers both end of turn and a stop sequence; decoded as end of turn | none (the format does not say) |
-
-Deviations from the draft brief:
-
-- `emit` returns the request with its diagnostics (`Emitted`), not the bare
-  request, so that design rule 2 (lossless or it says so) holds.
-- The `Wire` trait has the client half only. `accept` and `encoder` are
-  added with the server direction.
-- A citation is a block that annotates the text block before it, matching
-  how both formats attach citations to text.
-- Extensions are kept per format at the conversation level. Per-turn and
-  per-block extensions come with accept, where a round trip needs them.
-- Fuzzing: a deterministic noise test (`tests/noise.rs`) mutates the
-  fixture streams and feeds random bytes, 4,000 rounds per format, with no
-  panic. Fuzz targets need a nightly toolchain; they come with accept.
-- Cross-format translation tests need accept, so they wait.
+The protocol crate's status, lossy paths and deviations are in
+[status-protocol.md](status-protocol.md), newest first.
 
 ## Small Qwen3.5 models; manifest hashes confirmed (#25)
 

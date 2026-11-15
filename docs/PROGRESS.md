@@ -20,34 +20,37 @@ Updated at every issue boundary. A successor session resumes from here.
 | 12 | #23 | Milestone 0 gate: real-model smoke on the Intel test machine | done |
 | 13 | #25 | Small Qwen3.5 models; manifest hashes confirmed | done |
 
-## Model protocol, client direction
+## Model protocol and reasoning
 
 | Order | Issue | Task | State |
 | --- | --- | --- | --- |
-| 1 | #27 | Protocol crate: hub types, plus emit and decode for messages and chat | in review |
-| 2 | #28 | Reasoning on streamed chunks, with a per-request control | in review |
+| 1 | #27 | Protocol crate: hub types, plus emit and decode for messages and chat | done |
+| 2 | #28 | Reasoning on streamed chunks, with a per-request control | done |
+| 3 | #29 | Commit Cargo.lock | waiting: a deploy key, to push with git from the Mac |
+| 4 | #32 | Protocol: accept and encode for messages and chat; cross-format tests; fuzz targets | done |
+| 5 | #33 | Protocol: the responses format, both directions | done |
 
 Work the issues in this order. Each one is a brief: Context, Acceptance
 criteria, Files in scope, Out of scope.
 
 ## Open
 
-- Milestone 0 is complete: every gate item, and the real-model smoke test
-  on the Intel test machine.
-- Omar approves every merge. Pull requests stop at review.
-- The server direction of the protocol crate (accept, encode) and the
-  responses format wait for Omar's go-ahead.
+- The protocol crate is complete for the brief's Milestone P0: three
+  formats, both directions, fixtures, cross-format tests and fuzzing. Its
+  status is in `docs/status-protocol.md`.
+- The local provider still parses the server's stream itself; it does not
+  use the protocol crate yet.
+- Fuzzing has run without a sanitizer only; a run under the address
+  sanitizer needs a nightly toolchain.
 
 ## Next three issues
 
-1. Protocol crate, server direction: accept and encode for messages and
-   chat, which the engine's local endpoint needs; then cross-format tests
-   and fuzz targets.
-2. Benchmark every chat model on the Intel test machine while it is idle,
+1. The engine's local endpoint (in the engine repo) on top of `accept`,
+   `encoder` and `encode_error`: the protocol crate is ready for it.
+2. Move the local provider's stream parsing onto the protocol crate's chat
+   decoder, and run the fuzz targets under the address sanitizer.
+3. Benchmark every chat model on the Intel test machine while it is idle,
    and record which sizes each hardware profile should default to.
-3. Engine integration: the engine injects its memory gate, the server
-   binary path and a context size per hardware profile, and its model
-   gateway routes to one `LocalLlama` for chat and one for embeddings.
 
 ## How to resume
 

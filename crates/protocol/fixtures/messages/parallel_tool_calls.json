@@ -114,6 +114,12 @@
       "reason": "tool_use"
     }
   ],
-  "diags": [],
+  "diags": [
+    {
+      "kind": "approximated",
+      "at": "parallel_tool_calls",
+      "detail": "parallel calls are the format's default; it can only turn them off"
+    }
+  ],
   "end": "done"
 }

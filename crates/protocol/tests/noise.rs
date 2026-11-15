@@ -1,4 +1,4 @@
-//! Decoders never panic on broken input: random bytes, and the fixture
+//! Decoders and accept never panic on broken input: random bytes, and the fixture
 //! streams with bytes flipped, dropped and repeated. Errors are fine.
 //!
 //! A deterministic generator keeps this hermetic; long fuzzing runs come
@@ -6,7 +6,7 @@
 
 use std::path::Path;
 
-use isonomic_model_protocol::{Chat, Limits, Messages, StreamDecoder, Wire};
+use isonomic_model_protocol::{Chat, Limits, Messages, Responses, StreamDecoder, Wire};
 
 struct Rng(u64);
 
@@ -48,6 +48,24 @@ fn seeds(format: &str) -> Vec<Vec<u8>> {
     out
 }
 
+/// The fixture requests, as request bodies for accept.
+fn requests(format: &str) -> Vec<Vec<u8>> {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("fixtures")
+        .join(format);
+    let mut out: Vec<Vec<u8>> = std::fs::read_dir(dir)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| p.extension().is_some_and(|x| x == "json"))
+        .map(|p| {
+            let v: serde_json::Value = serde_json::from_slice(&std::fs::read(p).unwrap()).unwrap();
+            serde_json::to_vec(&v["request"]).unwrap()
+        })
+        .collect();
+    out.sort();
+    out
+}
+
 fn mutate(rng: &mut Rng, seed: &[u8]) -> Vec<u8> {
     let mut bytes = seed.to_vec();
     for _ in 0..1 + rng.below(8) {
@@ -72,7 +90,8 @@ fn mutate(rng: &mut Rng, seed: &[u8]) -> Vec<u8> {
 }
 
 fn shake<W: Wire>(format: &str, rounds: usize) {
-    let seeds = seeds(format);
+    let mut seeds = seeds(format);
+    seeds.extend(requests(format));
     let mut rng = Rng(0x9e37_79b9_7f4a_7c15);
     for _ in 0..rounds {
         let seed = &seeds[rng.below(seeds.len())];
@@ -81,6 +100,7 @@ fn shake<W: Wire>(format: &str, rounds: usize) {
         let noise: Vec<u8> = (0..rng.below(512)).map(|_| rng.next() as u8).collect();
         feed::<W>(&noise, 1 + rng.below(64));
         let _ = W::decode_response_body(&input, &Limits::default());
+        let _ = W::accept_body(&input, &Limits::default());
         let _ = W::decode_error(Some(500), &input);
     }
 }
@@ -93,4 +113,9 @@ fn the_messages_decoder_survives_noise() {
 #[test]
 fn the_chat_decoder_survives_noise() {
     shake::<Chat>("chat", 4000);
+}
+
+#[test]
+fn the_responses_decoder_survives_noise() {
+    shake::<Responses>("responses", 4000);
 }

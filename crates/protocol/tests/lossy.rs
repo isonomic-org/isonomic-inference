@@ -282,3 +282,125 @@ fn a_closing_frame_after_an_error_is_accepted_and_anything_else_is_not() {
         .push(b"data: {\"type\":\"message_start\",\"message\":{}}\n\n")
         .is_err());
 }
+
+fn accept<W: Wire>(body: Value) -> Vec<(DiagKind, String)> {
+    W::accept_body(&serde_json::to_vec(&body).unwrap(), &Limits::default())
+        .unwrap()
+        .diags
+        .into_iter()
+        .map(|d| (d.kind, d.at))
+        .collect()
+}
+
+#[test]
+fn accept_lossy_paths() {
+    let messages = json!({
+        "model": "m", "max_tokens": 8,
+        "system": [{ "type": "text", "text": "s", "citations": [{ "type": "char_location" }] },
+                   { "type": "image", "source": { "type": "url", "url": "https://example.org/a.png" } }],
+        "messages": [{ "role": "user", "content": "hi" }],
+        "output_config": { "effort": "extreme" },
+    });
+    assert_eq!(
+        accept::<Messages>(messages),
+        [
+            d(DiagKind::Dropped, "system[0]"),
+            d(DiagKind::Dropped, "system[1]"),
+            d(DiagKind::Dropped, "output_config.effort"),
+        ]
+    );
+    let effort_only = json!({ "model": "m", "max_tokens": 8, "messages": [],
+        "output_config": { "effort": "low" } });
+    assert_eq!(
+        accept::<Messages>(effort_only),
+        [d(DiagKind::Approximated, "output_config.effort")]
+    );
+
+    let chat = json!({ "model": "m", "messages": [
+        { "role": "user", "content": [{ "type": "file", "file": { "file_id": "f1" } }] },
+        { "role": "developer", "content": [{ "type": "text", "text": "late" },
+            { "type": "image_url", "image_url": { "url": "https://example.org/a.png" } }] },
+        { "role": "assistant", "tool_calls": [{ "id": "c", "type": "function",
+            "function": { "name": "t", "arguments": "{bad" } }] },
+    ], "tools": [{ "type": "custom", "function": { "name": "x", "parameters": {} } }] });
+    assert_eq!(
+        accept::<Chat>(chat),
+        [
+            d(DiagKind::Dropped, "messages[0].content[0]"),
+            d(DiagKind::Relocated, "messages[1]"),
+            d(DiagKind::Dropped, "messages[1]"),
+            d(DiagKind::Approximated, "messages[2].tool_calls[0]"),
+            d(DiagKind::Dropped, "tools[0]"),
+        ]
+    );
+}
+
+#[test]
+fn responses_lossy_paths() {
+    use isonomic_model_protocol::Responses;
+    let reasoning = Block::Reasoning {
+        text: "r".into(),
+        signature: Some("not-this-format".into()),
+        redacted: None,
+    };
+    let mut conv = with_turns(vec![
+        turn(
+            Role::User,
+            vec![
+                Block::text("q"),
+                Block::ToolResult {
+                    call_id: "c".into(),
+                    content: vec![Block::text("ok")],
+                    is_error: true,
+                },
+            ],
+        ),
+        turn(
+            Role::Assistant,
+            vec![
+                Block::text("a"),
+                Block::Citation(Citation::default()),
+                reasoning,
+            ],
+        ),
+    ]);
+    conv.system = vec!["one".into(), "two".into()];
+    conv.sampling.stop = vec!["x".into()];
+    assert_eq!(
+        kinds::<Responses>(&conv, &opts()),
+        [
+            d(DiagKind::Approximated, "system"),
+            d(DiagKind::Dropped, "sampling.stop"),
+            d(DiagKind::Relocated, "turns[0].blocks[1]"),
+            d(DiagKind::Dropped, "turns[0].blocks[1]"),
+            d(DiagKind::Dropped, "turns[1].blocks[1]"),
+            d(DiagKind::Dropped, "turns[1].blocks[2]"),
+        ]
+    );
+
+    let request = json!({ "model": "m", "input": [
+        { "type": "message", "id": "msg_1", "role": "assistant",
+          "content": [{ "type": "output_text", "text": "a" }, { "type": "audio" }] },
+        { "type": "web_search_call", "id": "ws_1" },
+        { "role": "user", "content": [{ "type": "input_image", "file_id": "f1" }] },
+        { "role": "developer", "content": "late" },
+      ],
+      "tools": [{ "type": "web_search", "name": "" }],
+      "text": { "verbosity": "low" },
+      "reasoning": { "effort": "extreme", "summary": "auto" } });
+    assert_eq!(
+        accept::<Responses>(request),
+        [
+            d(DiagKind::Dropped, "input[0].id"),
+            d(DiagKind::Dropped, "input[0]"),
+            d(DiagKind::Dropped, "input[1].id"),
+            d(DiagKind::Dropped, "input[1]"),
+            d(DiagKind::Dropped, "input[2].content[0]"),
+            d(DiagKind::Relocated, "input[3]"),
+            d(DiagKind::Dropped, "tools[0]"),
+            d(DiagKind::Dropped, "text"),
+            d(DiagKind::Dropped, "reasoning"),
+            d(DiagKind::Dropped, "reasoning.effort"),
+        ]
+    );
+}

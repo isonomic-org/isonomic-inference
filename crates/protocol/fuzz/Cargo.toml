@@ -1,0 +1,32 @@
+[package]
+name = "isonomic-model-protocol-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+license = "UNLICENSED"
+
+# Not part of the workspace: fuzzing needs a nightly toolchain and
+# libfuzzer, neither of which the protocol crate itself may depend on.
+# Run with `cargo +nightly fuzz run <target>` from crates/protocol.
+[workspace]
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+isonomic-model-protocol = { path = ".." }
+
+[[bin]]
+name = "decode"
+path = "fuzz_targets/decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "accept"
+path = "fuzz_targets/accept.rs"
+test = false
+doc = false
+bench = false
