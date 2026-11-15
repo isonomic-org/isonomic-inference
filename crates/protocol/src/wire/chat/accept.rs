@@ -121,6 +121,7 @@ pub(super) fn accept(req: Request, limits: &Limits) -> Result<Accepted, Protocol
                     });
                 }
                 conv.turns.push(Turn {
+                    id: None,
                     role: Role::Assistant,
                     blocks,
                 });
@@ -210,6 +211,7 @@ pub(super) fn accept(req: Request, limits: &Limits) -> Result<Accepted, Protocol
 
 fn empty(role: Role) -> Turn {
     Turn {
+        id: None,
         role,
         blocks: Vec::new(),
     }

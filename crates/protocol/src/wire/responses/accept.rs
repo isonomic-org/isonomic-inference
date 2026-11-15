@@ -38,6 +38,7 @@ impl Turns {
         &mut self
             .open
             .get_or_insert_with(|| Turn {
+                id: None,
                 role,
                 blocks: Vec::new(),
             })

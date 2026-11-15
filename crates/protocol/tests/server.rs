@@ -1,12 +1,16 @@
 //! The server direction on every fixture: accept then emit gives back the
 //! request with no diagnostics; encoding the expected deltas, reply and
-//! error and decoding them again gives back the same values.
+//! error and decoding them again gives back the same values. Built with the
+//! `server` feature.
+#![cfg(feature = "server")]
+
+mod common;
 
 use std::path::{Path, PathBuf};
 
 use isonomic_model_protocol::{
-    Chat, Delta, EmitOptions, EncodeOptions, Encoder, HubError, Limits, Messages, Reply, Responses,
-    StreamDecoder, Wire,
+    Chat, Delta, EmitOptions, EncodeOptions, Encoder, HubError, Limits, Messages, Responses,
+    StreamDecoder, WireServer,
 };
 use serde_json::Value;
 
@@ -39,7 +43,7 @@ fn opts() -> EncodeOptions {
 }
 
 /// Encode deltas to a stream, then decode it again.
-pub fn reencode<W: Wire>(deltas: &[Delta], keep_alive: bool) -> (Vec<Delta>, bool) {
+pub fn reencode<W: WireServer>(deltas: &[Delta], keep_alive: bool) -> (Vec<Delta>, bool) {
     let mut encoder = W::encoder(opts());
     let mut stream = String::new();
     for delta in deltas {
@@ -54,7 +58,7 @@ pub fn reencode<W: Wire>(deltas: &[Delta], keep_alive: bool) -> (Vec<Delta>, boo
     (out, decoder.finish().is_ok())
 }
 
-fn check<W: Wire>() {
+fn check<W: WireServer>() {
     for scenario in SCENARIOS {
         let fixture = fixture(W::NAME, scenario);
         let label = format!("{}/{scenario}", W::NAME);
@@ -64,7 +68,7 @@ fn check<W: Wire>() {
         let accepted = W::accept_body(&body, &Limits::default())
             .unwrap_or_else(|e| panic!("{label}: accept: {e}"));
         assert!(accepted.diags.is_empty(), "{label}: {:?}", accepted.diags);
-        let emitted = W::emit(
+        let (request, diags) = W::emit(
             &accepted.conversation,
             &EmitOptions {
                 stream: accepted.stream,
@@ -73,9 +77,9 @@ fn check<W: Wire>() {
             },
         )
         .unwrap();
-        assert!(emitted.diags.is_empty(), "{label}: {:?}", emitted.diags);
+        assert!(diags.is_empty(), "{label}: {diags:?}");
         assert_eq!(
-            serde_json::to_value(&emitted.request).unwrap(),
+            serde_json::to_value(&request).unwrap(),
             fixture["request"],
             "{label}: accept then emit"
         );
@@ -97,10 +101,14 @@ fn check<W: Wire>() {
         }
 
         if let Some(reply) = fixture.get("reply") {
-            let reply: Reply = serde_json::from_value(reply.clone()).unwrap();
-            let response = serde_json::to_vec(&W::encode_response(&reply, &opts())).unwrap();
-            let again = W::decode_response_body(&response, &Limits::default()).unwrap();
-            assert_eq!(again, reply, "{label}: response");
+            let conv = common::conversation_of_reply(reply);
+            let response = serde_json::to_vec(&W::encode_response(&conv, &opts())).unwrap();
+            let (again, diags) = W::parse_body(&response, &Limits::default()).unwrap();
+            assert_eq!(
+                common::reply_json(&again, &diags),
+                *reply,
+                "{label}: response"
+            );
         }
         if let Some(error) = fixture.get("error") {
             let error: HubError = serde_json::from_value(error.clone()).unwrap();

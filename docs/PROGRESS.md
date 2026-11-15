@@ -28,29 +28,34 @@ Updated at every issue boundary. A successor session resumes from here.
 | 2 | #28 | Reasoning on streamed chunks, with a per-request control | done |
 | 3 | #29 | Commit Cargo.lock | waiting: a deploy key, to push with git from the Mac |
 | 4 | #32 | Protocol: accept and encode for messages and chat; cross-format tests; fuzz targets | done |
-| 5 | #33 | Protocol: the responses format, both directions | done |
+| 5 | #33 | Protocol: the responses format, both directions | done, behind the `server` feature |
+| 6 | #36 | Protocol: align with the P1a brief (client trait, parse, server code behind a feature) | ready |
 
 Work the issues in this order. Each one is a brief: Context, Acceptance
 criteria, Files in scope, Out of scope.
 
 ## Open
 
-- The protocol crate is complete for the brief's Milestone P0: three
-  formats, both directions, fixtures, cross-format tests and fuzzing. Its
-  status is in `docs/status-protocol.md`.
-- The local provider still parses the server's stream itself; it does not
-  use the protocol crate yet.
-- Fuzzing has run without a sanitizer only; a run under the address
-  sanitizer needs a nightly toolchain.
+- The P1a gate is met; item by item in `docs/status-protocol.md`.
+- P1b code (server direction, responses format) is in main behind the
+  `server` feature, merged early in #35. The master session decides whether
+  to keep it or revert it.
+- Merge rule: merge your own pull request once every check is green;
+  shared-contract changes get `needs-master` and wait. Open issues labelled
+  `master` come first.
+- Cargo.lock (#29) is waiting on the deploy key for git pushes from the Mac.
 
 ## Next three issues
 
-1. The engine's local endpoint (in the engine repo) on top of `accept`,
-   `encoder` and `encode_error`: the protocol crate is ready for it.
+1. The engine's model gateway calls models through this crate: it needs
+   `Messages`/`Chat::emit` for remote providers, `StreamDecoder` for their
+   streams, `parse_body` for whole replies and `decode_error` for failures,
+   plus a `BlobStore` over the engine's content store.
 2. Move the local provider's stream parsing onto the protocol crate's chat
-   decoder, and run the fuzz targets under the address sanitizer.
-3. Benchmark every chat model on the Intel test machine while it is idle,
-   and record which sizes each hardware profile should default to.
+   decoder (the brief's follow-up after the gate).
+3. Run the fuzz targets under the address sanitizer once a nightly
+   toolchain is available, and benchmark every chat model on the Intel test
+   machine while it is idle.
 
 ## How to resume
 

@@ -13,5 +13,10 @@ publish.workspace = true
 serde = { workspace = true }
 serde_json = { workspace = true }
 
+[features]
+# The server direction (accept, encode) and the responses format. Built
+# ahead of their milestone; off by default, not part of the client surface.
+server = []
+
 [lints]
 workspace = true

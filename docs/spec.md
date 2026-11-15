@@ -130,19 +130,20 @@ the engine's model gateway.
 
 `isonomic-model-protocol`: one internal vocabulary for a conversation with a
 model, and translation between it and the wire formats programs use to talk
-to models. Three consumers: the engine's local model endpoint, its opt-in
-remote providers, and Chat, which needs reasoning streamed apart from the
-answer.
+to models. The brief is "Kickoff: Isonomic Inference, model protocol crate
+(P1a)". The engine's model gateway uses it to call models, and Chat gets
+reasoning streamed apart from the answer.
 
 - **Pure.** No network, files, processes or clocks; no HTTP client or
   server. It depends only on serde, serde_json and the pure crates on
   `crates/protocol/deps-allow.txt`, and on no other crate in this repo.
 - **One hub.** `Conversation` holds system instructions; turns of blocks
-  (text, reasoning, image, file, tool use, tool result, citation); tool
-  specs and tool choice; a response format (JSON Schema or an opaque
-  constraint); reasoning effort and budget; sampling limits; metadata. Fields
-  a format has and the hub lacks live in per-format extensions and are
-  written back on the way out.
+  (text, reasoning, image, file, tool use, tool result, citation), each turn
+  with an optional server ID; tool specs and tool choice; a response format
+  (JSON Schema or an opaque constraint); reasoning effort and budget;
+  sampling limits; metadata; usage; and the stop reason. Fields a format has
+  and the hub lacks live in per-format extensions and are written back on
+  the way out.
 - **Lossless, or it says so.** Every lossy step returns a diagnostic.
 - **Images and files are references.** A blob is resolved by the caller;
   inline data is size-capped.
@@ -152,23 +153,25 @@ answer.
 - **Limits** on body size, JSON depth, turns, blocks, tools, schema size,
   inline blobs, stream lines, stream events and streamed tool calls.
 
-Formats, each a `Wire` implementation:
+**P1a, the client direction** (`WireClient`), for the messages and chat
+formats:
 
-| Format | Emit (hub → request) | Decode (stream, response, error) | Accept (request → hub) | Encode (deltas → stream) |
-| --- | --- | --- | --- | --- |
-| messages | yes | yes | yes | yes |
-| chat | yes | yes | yes | yes |
-| responses | yes | yes | yes | yes |
+- `emit`: conversation → wire request, with its diagnostics;
+- `parse` / `parse_body`: whole reply → a conversation holding it as one
+  assistant turn, with model, usage and stop reason;
+- `decoder` with `StreamDecoder`: server-sent events → deltas; and
+  `decode_error`: error bodies → the hub's error kinds.
 
-Fixtures in `crates/protocol/fixtures` cover every format × {text, single
-tool call, parallel tool calls, reasoning, image input, structured output,
-error, stop mid-stream}. Each fixture emits, decodes, accepts and encodes to
-the expected values, and translates across formats with only the listed
-losses. Accept turns inline media into blobs (`Accepted::blobs`) that the
-engine stores; emit reads blobs back through `BlobStore`. Encoders need a
-creation time and fallback names from the engine (`EncodeOptions`); the
-crate reads no clock. Fuzz targets for the decoders and accept live in
-`crates/protocol/fuzz`, outside the workspace.
+**P1b, the server direction** (`WireServer: WireClient`: accept and encode)
+and the **responses** format are behind the `server` feature, off by
+default. They are built and tested (CI runs every feature) but are not part
+of the P1a surface.
+
+Fixtures in `crates/protocol/fixtures` cover messages and chat (and, with
+`server`, responses) × {text, single tool call, parallel tool calls,
+reasoning, image input, structured output, error, stop mid-stream}. Fuzz
+targets `decode`, `parse` and `accept` live in `crates/protocol/fuzz`,
+outside the workspace.
 
 ### Reserved
 

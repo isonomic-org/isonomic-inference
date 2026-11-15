@@ -1,7 +1,10 @@
-//! The wire formats. Each implements [`crate::Wire`].
+//! The wire formats. Each implements [`crate::WireClient`]; with the
+//! `server` feature, [`crate::WireServer`] too, and the responses format
+//! exists.
 
 pub mod chat;
 pub mod messages;
+#[cfg(feature = "server")]
 pub mod responses;
 
 use crate::diag::{ErrorKind, HubError};

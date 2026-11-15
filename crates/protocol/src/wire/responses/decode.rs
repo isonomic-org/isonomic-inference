@@ -7,9 +7,10 @@ use serde_json::Value;
 use super::emit::signature_of;
 use super::types::{ErrorBody, ErrorResponse, Event, Response, WireUsage};
 use crate::conversation::{Block, Citation, Role, StopReason, Turn, Usage};
-use crate::decode::{Decoder, Delta, Reply};
+use crate::decode::{Decoder, Delta};
 use crate::diag::{Diag, DiagKind, ErrorKind, HubError, ProtocolError};
 use crate::limits::Limits;
+use crate::parse::Reply;
 use crate::sse::SseFrame;
 
 pub(super) fn parse_event(frame: &SseFrame, limits: &Limits) -> Result<Event, ProtocolError> {
@@ -304,6 +305,7 @@ pub(super) fn decode_response(resp: Response) -> Result<Reply, ProtocolError> {
         id: resp.id,
         model: resp.model,
         turn: Turn {
+            id: None,
             role: Role::Assistant,
             blocks,
         },

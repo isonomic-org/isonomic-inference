@@ -69,7 +69,11 @@ pub(super) fn accept(req: Request, limits: &Limits) -> Result<Accepted, Protocol
                 out
             }
         };
-        conv.turns.push(Turn { role, blocks });
+        conv.turns.push(Turn {
+            id: None,
+            role,
+            blocks,
+        });
     }
 
     conv.tools = req

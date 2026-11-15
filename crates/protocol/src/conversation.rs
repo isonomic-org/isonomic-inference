@@ -37,6 +37,12 @@ pub struct Conversation {
     /// Caller metadata, passed through where a format has a place for it.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub metadata: BTreeMap<String, String>,
+    /// Token usage, when the conversation came from a reply.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub usage: Option<Usage>,
+    /// Why the model stopped, when the conversation came from a reply.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stop_reason: Option<StopReason>,
     #[serde(skip_serializing_if = "Extensions::is_empty")]
     pub ext: Extensions,
 }
@@ -53,6 +59,10 @@ pub enum Role {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Turn {
+    /// The server's ID for this turn, when a reply carried one. Emit does
+    /// not send it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     pub role: Role,
     pub blocks: Vec<Block>,
 }
@@ -60,6 +70,7 @@ pub struct Turn {
 impl Turn {
     pub fn user_text(text: impl Into<String>) -> Self {
         Self {
+            id: None,
             role: Role::User,
             blocks: vec![Block::text(text)],
         }
@@ -67,6 +78,7 @@ impl Turn {
 
     pub fn assistant_text(text: impl Into<String>) -> Self {
         Self {
+            id: None,
             role: Role::Assistant,
             blocks: vec![Block::text(text)],
         }

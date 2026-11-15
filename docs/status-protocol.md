@@ -4,6 +4,64 @@ What `crates/protocol` actually does, newest first, with every lossy path,
 deviation and deferral. The spec is the protocol section of
 [spec.md](spec.md). The rest of the repo is in [status.md](status.md).
 
+## P1a: client trait, parse, and P1b behind a feature (#36)
+
+The approved brief "Kickoff: Isonomic Inference, model protocol crate (P1a)"
+replaces the draft and scopes P1a to the client direction for messages and
+chat. This entry brings the crate in line with it.
+
+- **`WireClient`**: `emit` (conversation → request and diagnostics),
+  `parse` and `parse_body` (whole reply → conversation), `decoder` with
+  `StreamDecoder`, and `decode_error`.
+- **The hub** gains `usage` and `stop_reason` on `Conversation`, and an
+  optional server `id` on `Turn`. All three are additive, so P1b needs no hub
+  change.
+- **P1b behind `server`**: `WireServer: WireClient` (accept, encode) and the
+  responses format compile only with the `server` feature, which is off by
+  default. The shared CI runs clippy and the tests with `--all-features`, so
+  they stay built and tested.
+
+The gate, item by item:
+
+| # | Gate item | Proof | State |
+| --- | --- | --- | --- |
+| 1 | Fixtures for messages and chat × the eight scenarios; each emits, parses or decodes and matches | `tests/fixtures.rs` | met |
+| 2 | Emit, then parse the matching response; meaning preserved, every diagnostic listed | `tests/client.rs`, `a_parsed_reply_feeds_the_next_turn` | met |
+| 3 | A conversation emitted as messages and as chat carries the same meaning; every lossy path listed | `tests/client.rs`, `a_conversation_means_the_same_as_messages_and_as_chat`; losses below | met |
+| 4 | Decoders and parse each fuzzed ten minutes with no panic; each limit has a test | fuzz targets `decode` and `parse` (results below); `tests/limits.rs` | met |
+| 5 | Decoding a 1 MB stream uses constant memory | `tests/stream_memory.rs` | met |
+| 6 | Dependency allow-list passes: no I/O crates | CI job `protocol dependency allow-list` | met |
+
+Losses for gate items 2 and 3:
+
+- Feeding a parsed reply back as the next turn: the chat format sends
+  earlier reasoning back only with `chat_reasoning_history`, so the
+  reasoning is dropped, with a diagnostic. Messages loses nothing on the
+  fixture set.
+- The same conversation as messages and as chat: the messages format has no
+  schema name or strict flag (dropped), and can only turn parallel calls
+  off, so an explicit "allowed" is approximated. Chat loses nothing on the
+  fixture set.
+- Every other lossy path is in the tables below.
+
+Fuzzing round 3 (this build; no sanitizer, stable with `RUSTC_BOOTSTRAP=1`):
+`decode` 7,406,472 runs and `parse` 28,846,979 runs, 601 s each, no crash.
+
+Deviations from the P1a brief:
+
+- **P1b code is already in main.** #35 merged the server direction and the
+  responses format before the P1a brief replaced the draft. This session
+  merged #35 itself, which the brief now forbids. The code stays, behind the
+  `server` feature, so P1b adds nothing to the hub. If the master session
+  would rather not carry it, reverting #35 and this feature gate removes it.
+- `emit` returns `Result<(Request, Vec<Diag>), ProtocolError>`, not a bare
+  pair: a limit or a missing blob is an error, not a diagnostic.
+- `decoder` takes the limits. `parse_event`, `decode_error` and
+  `parse_body` are on the trait too, so a caller needs no per-format code.
+- Files: `emit.rs`, `parse.rs`, `decode.rs`, `limits.rs`, `diag.rs` as the
+  brief lists, plus `sse.rs` (event-stream framing) and `reasoning.rs` (the
+  effort table).
+
 ## Responses format, all four directions (#33)
 
 - `wire/responses`: the request (instructions and input items: messages,
