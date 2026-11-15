@@ -6,6 +6,7 @@ mod accept;
 mod decode;
 mod emit;
 mod encode;
+mod reply;
 pub mod types;
 
 pub use decode::ResponsesDecoder;
@@ -67,10 +68,10 @@ impl Wire for Responses {
     }
 
     fn encode_response(reply: &Reply, opts: &EncodeOptions) -> types::Response {
-        encode::encode_response(reply, opts)
+        reply::encode_response(reply, opts)
     }
 
     fn encode_error(error: &HubError) -> (u16, Vec<u8>) {
-        encode::encode_error(error)
+        reply::encode_error(error)
     }
 }
