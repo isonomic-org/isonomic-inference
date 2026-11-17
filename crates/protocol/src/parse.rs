@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Parse: a format's whole reply → conversation.
 //!
 //! Each format's decoder module builds a [`Reply`]; parse turns it into the

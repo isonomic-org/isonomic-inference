@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Worker lifecycle state and the restart policy numbers.
 
 /// Lifecycle state of a supervised worker.

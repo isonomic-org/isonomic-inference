@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Starting and stopping the worker process.
 //!
 //! A worker is started with an environment built from scratch, in its own

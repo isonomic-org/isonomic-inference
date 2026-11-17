@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The single table that maps reasoning effort between formats.
 
 use crate::conversation::Effort;

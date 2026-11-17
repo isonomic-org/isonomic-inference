@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Minimal argument parsing: `--name value` pairs and positional values.
 
 use std::collections::HashMap;

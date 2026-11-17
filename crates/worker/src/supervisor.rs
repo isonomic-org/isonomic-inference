@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The worker supervisor: lazy start, state, logs and the public handle.
 //! The background tasks that keep a running worker alive are in `tasks.rs`.
 

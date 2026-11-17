@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Waiting helpers. The supervised code waits on an injected clock; tests
 //! move that clock explicitly. The only real time used here is a safety limit
 //! on how long a test waits for the operating system (a process to start or

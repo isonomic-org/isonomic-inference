@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Shared pieces of encode: the encoder trait, its options, and the HTTP
 //! status each error kind maps to.
 

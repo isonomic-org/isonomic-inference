@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Test support for Isonomic Inference.
 //!
 //! Hermetic tests are the default in this workspace: stand-in binaries

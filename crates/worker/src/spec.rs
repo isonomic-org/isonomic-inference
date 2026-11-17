@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! What a worker is: its binary, its arguments, its health probe, and the
 //! policy numbers that govern its lifecycle.
 

@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Background tasks for a running worker: the monitor that owns the process
 //! and restarts it, the steady-state probe that catches a hung server, the
 //! idle watcher, and the deliberate stop they share.

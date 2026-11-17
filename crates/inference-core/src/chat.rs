@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Chat and embedding request and response types.
 //!
 //! These are the data types the frozen provider trait speaks (see the

@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The responses format: instructions and a list of input items (messages,
 //! function calls and their output, reasoning), and a stream of typed,
 //! numbered events ending in the whole response.

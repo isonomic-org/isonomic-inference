@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The chat format: a list of role-tagged messages, function tools, and a
 //! stream of delta chunks ending in a done marker.
 

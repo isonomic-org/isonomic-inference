@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Decoding replies: streamed deltas, whole responses, and the stream driver.
 
 use serde::{Deserialize, Serialize};

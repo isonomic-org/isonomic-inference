@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! `cargo xtask smoke`: one chat completion and one embedding against a real
 //! model server and a real model, with a report meant to be pasted back.
 //!

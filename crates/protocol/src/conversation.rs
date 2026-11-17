@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The hub: one internal vocabulary for a conversation with a model.
 //!
 //! Every wire format translates to and from these types. They carry no

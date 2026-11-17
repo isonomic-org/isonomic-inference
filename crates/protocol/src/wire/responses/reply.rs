@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Hub → responses format: whole responses and errors, and the helpers the
 //! stream encoder shares with them.
 

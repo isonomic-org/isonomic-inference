@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The wire formats. Each implements [`crate::WireClient`]; with the
 //! `server` feature, [`crate::WireServer`] too, and the responses format
 //! exists.

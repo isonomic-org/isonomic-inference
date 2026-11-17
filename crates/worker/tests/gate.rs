@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The memory gate is asked before every start: the first lazy start and
 //! every crash restart.
 #![cfg(unix)]

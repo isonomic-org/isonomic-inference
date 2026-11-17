@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! What a worker is started with and what happens to it when its parent
 //! dies: an environment built from the allow-list, loopback only, a secret
 //! per launch, and a process group that does not outlive this process.

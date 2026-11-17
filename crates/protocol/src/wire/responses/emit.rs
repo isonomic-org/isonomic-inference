@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Conversation → responses-format request.
 
 use serde_json::{json, Map, Value};

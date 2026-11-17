@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The responses format on the wire: request, input and output items,
 //! response object, stream events, errors.
 //!

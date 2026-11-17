@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Every hand-written fixture, for every format: emit matches the expected
 //! request, the stream decodes to the expected deltas however it is split,
 //! and whole responses parse and error bodies decode to the expected hub

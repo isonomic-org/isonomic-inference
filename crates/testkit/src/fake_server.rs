@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! A fake model server: the HTTP surface of the llama.cpp server that this
 //! workspace uses (`/health`, `/v1/chat/completions` as an event stream,
 //! `/v1/embeddings`), running in the test process on a loopback port. A chat

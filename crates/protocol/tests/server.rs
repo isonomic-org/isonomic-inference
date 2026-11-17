@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The server direction on every fixture: accept then emit gives back the
 //! request with no diagnostics; encoding the expected deltas, reply and
 //! error and decoding them again gives back the same values. Built with the

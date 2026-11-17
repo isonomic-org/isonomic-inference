@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Isonomic model protocol: one vocabulary for a conversation with a model
 //! ([`Conversation`]) and pure translation between it and the wire formats
 //! programs use to talk to models.

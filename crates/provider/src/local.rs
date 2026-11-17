@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! `LocalLlama` provider: supervises the llama.cpp server through
 //! `isonomic-llama` (lazy start on the first inference request, idle unload,
 //! memory gate) and forwards OpenAI-compatible requests to it, streaming
