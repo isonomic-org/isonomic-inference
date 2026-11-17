@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The P1a gate, client direction only:
 //!
 //! - emit, then parse the matching response: the reply means what the

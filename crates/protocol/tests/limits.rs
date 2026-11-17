@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Each limit is enforced, and a hostile input costs bounded work.
 
 use std::collections::BTreeMap;

@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Any bytes as a request body for every format; whatever is accepted must
 //! emit again without a panic.
 #![no_main]

@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Decoders, parse and (with the server feature) accept never panic on
 //! broken input: random bytes, and the fixture
 //! streams with bytes flipped, dropped and repeated. Errors are fine.

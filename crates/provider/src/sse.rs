@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Parsing of the server's event stream, one line at a time.
 
 use isonomic_inference_core::ChatChunk;

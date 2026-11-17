@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Decoding a long stream holds constant memory: only the current line and
 //! event are buffered, and decoders keep no reply text.
 

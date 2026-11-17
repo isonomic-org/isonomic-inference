@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The messages format: system and turns of typed content blocks, tools
 //! with input schemas, and a stream of typed events.
 

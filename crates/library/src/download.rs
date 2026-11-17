@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Model download: checksum-verified fetch with progress reporting, cached
 //! under a models directory chosen by the caller.
 //!

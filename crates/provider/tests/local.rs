@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The local provider against a fake model server and a stand-in worker.
 #![cfg(unix)]
 

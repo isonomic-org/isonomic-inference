@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Stand-in binaries: small shell scripts that take the place of the real
 //! model server. Scripts use absolute paths only, because the worker's
 //! environment has no PATH.

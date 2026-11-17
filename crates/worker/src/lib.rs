@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Lifecycle of a model worker process.
 //!
 //! Spec: docs/spec.md. Status and deviations: docs/status.md.

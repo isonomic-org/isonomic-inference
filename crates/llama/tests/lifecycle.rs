@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Lifecycle of the supervised worker: lazy start, the memory gate, crash
 //! recovery on the backoff schedule, the breaker, idle unload, hung-server
 //! detection and teardown. Time is a clock the tests move by hand.

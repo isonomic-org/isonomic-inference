@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Translating across formats preserves meaning on the whole fixture set.
 //! Requests go messages → chat → messages and chat → messages → chat;
 //! streams decode in one format, encode in the other and decode again.

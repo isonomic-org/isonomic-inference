@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The memory gate: the seam consulted before a model server is started.
 //!
 //! This repo is the gate's consumer, so the trait and the denial type live

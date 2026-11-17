@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Limits that keep a hostile or broken peer to bounded time and memory.
 
 use serde_json::Value;

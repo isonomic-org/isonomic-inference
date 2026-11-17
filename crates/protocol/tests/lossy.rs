@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Every lossy step in emit and decode raises a diagnostic. This file is the
 //! executable list of lossy paths; docs/status.md lists the same paths.
 

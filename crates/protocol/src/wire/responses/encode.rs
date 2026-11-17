@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Hub → responses format: the event stream.
 //!
 //! The format's closing events repeat each item in full, and the final event

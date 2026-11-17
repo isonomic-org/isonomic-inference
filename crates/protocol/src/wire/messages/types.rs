@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The messages format on the wire: request, response, stream events, errors.
 //!
 //! Written from the format's public reference documentation.

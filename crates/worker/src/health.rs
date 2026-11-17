@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Two-phase health probe: TCP connect (the port check) then an HTTP GET (the
 //! protocol probe). It speaks HTTP itself and reads nothing from the
 //! environment, so it cannot be redirected by proxy settings.

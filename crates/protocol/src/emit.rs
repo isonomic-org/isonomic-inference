@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Shared pieces of emit: options, blob lookup, and identifier mapping.
 
 use std::collections::BTreeMap;

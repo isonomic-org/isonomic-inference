@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Server-sent-events framing: bytes in, complete events out.
 //!
 //! Only the current line and the current event's data are buffered, each

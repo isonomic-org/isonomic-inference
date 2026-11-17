@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The manifest of known models.
 //!
 //! The data lives in `models.json` next to this crate's manifest and is

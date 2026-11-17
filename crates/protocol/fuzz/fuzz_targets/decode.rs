@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Any bytes, split anywhere, into every stream decoder and error decoder:
 //! errors are fine, panics are not.
 #![no_main]

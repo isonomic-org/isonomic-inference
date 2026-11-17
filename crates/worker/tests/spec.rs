@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The worker lifecycle is not tied to one kind of worker: a different
 //! binary, different arguments and a different health probe run through the
 //! same supervisor.

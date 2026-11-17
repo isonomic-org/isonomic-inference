@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Hub → chat format: stream chunks, whole responses, errors.
 
 use serde_json::{json, Value};

@@ -3,7 +3,7 @@ name = "isonomic-model-protocol-fuzz"
 version = "0.0.0"
 edition = "2021"
 publish = false
-license = "UNLICENSED"
+license = "GPL-3.0-or-later"
 
 # Not part of the workspace: fuzzing needs a nightly toolchain and
 # libfuzzer, neither of which the protocol crate itself may depend on.

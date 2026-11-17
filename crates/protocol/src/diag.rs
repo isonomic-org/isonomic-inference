@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Diagnostics, protocol errors, and the hub's error kinds.
 
 use std::fmt;

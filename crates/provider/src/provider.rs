@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The frozen `InferenceProvider` trait: one trait, N providers,
 //! OpenAI-compatible wire format end to end.
 //! Do not change the trait surface. Providers plug in behind it.

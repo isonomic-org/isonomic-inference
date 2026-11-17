@@ -1,3 +1,6 @@
+// Copyright 2026 Anud Inc.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Hub → messages format: stream events, whole responses, errors.
 
 use std::collections::BTreeMap;
