@@ -79,4 +79,5 @@ Otherwise decide, record the decision in the pull request and in
 
 ## Licence
 
-- Repos stay private. This repository is licensed GPL-3.0-or-later: keep LICENSE at the root unmodified, keep `license = "GPL-3.0-or-later"` in every Cargo.toml, and start every new source file with `Copyright 2026 Anud Inc.` and `SPDX-License-Identifier: GPL-3.0-or-later`. Never remove an existing copyright or licence notice. Never rename or delete a repo.
+- This repository is public. Only collaborators can open pull requests. Never commit secrets, keys, tokens or private notes: everything pushed is visible to anyone.
+- This repository is licensed GPL-3.0-or-later: keep LICENSE at the root unmodified, keep `license = "GPL-3.0-or-later"` in every Cargo.toml, and start every new source file with `Copyright 2026 Anud Inc.` and `SPDX-License-Identifier: GPL-3.0-or-later`. Never remove an existing copyright or licence notice. Never rename or delete a repo.
