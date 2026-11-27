@@ -25,6 +25,27 @@ The spec is [spec.md](spec.md).
 - Tests: the built-in catalogue loads with every row field, the default by
   memory and its fallback, a duplicate across files.
 
+## 2026-11-27 · Decision 5: tool calls on the chat types; joining fragments
+
+- **Decision 5 is approved** (Omar, 27 Nov, recorded after #49 merged): the
+  tool fields #49 added to the frozen chat types stay. They are additive:
+  `ChatRequest::tools` and `tool_choice`, `ChatMessage::tool_calls` and
+  `tool_call_id`, `ChatChunk::tool_calls`, all empty by default and left off
+  the wire when empty. The provider trait is unchanged. Code that builds these
+  types with a struct literal must add `..Default::default()` (or use the
+  constructors): a source change for callers, not a wire change.
+- **`ToolCallAssembler`** (`inference-core::tools`) joins streamed fragments
+  into whole calls in index order. A later fragment of the same index with a
+  different id or name is refused, since it would splice two calls together;
+  a call with no name is refused at the end, and one with no id is given
+  `call_<index>`.
+- **A fragment with neither an index nor an id is refused** as a protocol
+  error. Before, it took its position in the event, so a server that sent one
+  fragment per event without indexes would have merged every call into the
+  first. A first fragment with an id and no index still takes its position.
+- Tests: the assembler's order, conflicts and missing name or id, and the
+  refused fragment.
+
 ## Tool calls on the local provider (#49)
 
 The engine needs to offer tools to Chat on local models. Additions to the
@@ -56,7 +77,7 @@ trait is unchanged:
 Findings and decisions:
 
 - **Template engine.** The server refuses `tools`, and any `tool_choice`
-  but `"auto"`, unless its Jinja template engine is on. In the tested build
+  but `"auto"`, unless its template engine is on. In the tested build
   (b12387) it is on by default for the server, with `--jinja` and
   `--no-jinja` to set it. Chat launches now pass `--jinja` anyway, so tool
   calling does not depend on a build's default, and both spellings are
