@@ -14,6 +14,7 @@ pub mod chat;
 pub mod clock;
 pub mod gate;
 pub mod model;
+pub mod tools;
 
 pub use chat::{
     ChatChunk, ChatMessage, ChatRequest, CostEstimate, EmbedRequest, Embeddings, ModelInfo,
@@ -22,3 +23,4 @@ pub use chat::{
 pub use clock::{timeout, Clock, ManualClock, Sleep, SystemClock};
 pub use gate::{FixedGate, RamDenial, RamGate};
 pub use model::{Capability, License, ModelMetadata, ModelRef};
+pub use tools::{ChatTool, ChatToolCall, ToolCallDelta};

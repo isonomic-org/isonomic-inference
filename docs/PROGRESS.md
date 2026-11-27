@@ -31,6 +31,7 @@ Updated at every issue boundary. A successor session resumes from here.
 | 5 | #33 | Protocol: the responses format, both directions | done, behind the `server` feature |
 | 6 | #36 | Protocol: align with the P1a brief (client trait, parse, server code behind a feature) | done |
 | 7 | #39 | Benchmark every chat model on the Intel test machine | done |
+| 8 | #49 | Tool calls on the local provider: tools, calls, results, streamed fragments | in review |
 
 Work the issues in this order. Each one is a brief: Context, Acceptance
 criteria, Files in scope, Out of scope.
@@ -46,6 +47,9 @@ criteria, Files in scope, Out of scope.
   `master` come first.
 - Cargo.lock (#29) is committed; pushes that carry it go through git from
   the Mac with this repository's deploy key.
+- Tool calls (#49): `ChatRequest::tools`/`tool_choice`,
+  `ChatMessage::tool_calls`/`tool_call_id`, `ChatChunk::tool_calls`; chat
+  launches pass `--jinja`. A real-model tool-call run is still to do.
 - Recommended chat default per hardware profile (#39): Qwen3.5 0.8B on
   Intel Macs (CPU only), with Qwen3.5 2B or Phi-3 mini as an opt-in;
   Qwen3.5 4B everywhere else. The engine makes the choice.

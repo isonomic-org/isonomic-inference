@@ -14,8 +14,9 @@ use isonomic_inference_testkit::{
 };
 use isonomic_llama::{LlamaConfig, LlamaError, LlamaSupervisor, ServerMode, ServiceState};
 use isonomic_provider::{
-    ChatMessage, ChatRequest, EmbedRequest, GatewayError, InferenceProvider, LocalLlama,
-    ProviderHealth, ProviderId, ReasoningChoice, ReasoningPolicy,
+    ChatMessage, ChatRequest, ChatTool, ChatToolCall, EmbedRequest, GatewayError,
+    InferenceProvider, LocalLlama, ProviderHealth, ProviderId, ReasoningChoice, ReasoningPolicy,
+    ToolCallDelta,
 };
 
 const SLEEPER: &str = "#!/bin/sh\nexec /bin/sleep 3600\n";
@@ -61,14 +62,8 @@ impl Rig {
 
 fn hello() -> ChatRequest {
     ChatRequest {
-        model: None,
-        messages: vec![ChatMessage {
-            role: "user".to_string(),
-            content: "hi".to_string(),
-        }],
-        temperature: None,
-        max_tokens: None,
-        reasoning: None,
+        messages: vec![ChatMessage::text("user", "hi")],
+        ..ChatRequest::default()
     }
 }
 
@@ -325,4 +320,74 @@ async fn on_intel_macs_reasoning_stays_off_whatever_the_request_asks() {
     };
     assert_eq!(ReasoningPolicy::for_this_machine(), expected);
     assert_eq!(rig.chat_provider().reasoning_policy(), expected);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn tools_go_out_on_the_request_and_streamed_tool_calls_come_back() {
+    let rig = Rig::new().await;
+    let provider = rig.chat_provider();
+    let read_file = ChatTool {
+        name: "read_file".to_string(),
+        description: "Read a file.".to_string(),
+        parameters: serde_json::json!({"type": "object"}),
+    };
+    // A follow-up turn: an earlier call and its result, with tools offered.
+    let request = ChatRequest {
+        messages: vec![
+            ChatMessage::text("user", "Read a.txt"),
+            ChatMessage::assistant_tool_calls(
+                "",
+                vec![ChatToolCall {
+                    id: "call_0".to_string(),
+                    name: "read_file".to_string(),
+                    arguments: r#"{"path":"a.txt"}"#.to_string(),
+                }],
+            ),
+            ChatMessage::tool_result("call_0", "not found"),
+        ],
+        tools: vec![read_file],
+        tool_choice: Some("auto".to_string()),
+        ..ChatRequest::default()
+    };
+    let mut stream = provider.chat(request).await.unwrap();
+    let mut deltas: Vec<ToolCallDelta> = Vec::new();
+    let mut finish = None;
+    while let Some(item) = stream.next().await {
+        let chunk = item.unwrap();
+        assert_eq!(chunk.delta, "");
+        deltas.extend(chunk.tool_calls);
+        finish = chunk.finish_reason.or(finish);
+    }
+    assert_eq!(finish.as_deref(), Some("tool_calls"));
+    let starts: Vec<_> = deltas
+        .iter()
+        .filter_map(|d| Some((d.index, d.id.clone()?, d.name.clone()?)))
+        .collect();
+    assert_eq!(
+        starts,
+        [
+            (0, "call_a".to_string(), "read_file".to_string()),
+            (1, "call_b".to_string(), "list_dir".to_string()),
+        ]
+    );
+    let args = |index: u32| -> String {
+        deltas
+            .iter()
+            .filter(|d| d.index == index)
+            .map(|d| d.arguments.as_str())
+            .collect()
+    };
+    assert_eq!(args(0), r#"{"path":"a.txt"}"#);
+    assert_eq!(args(1), r#"{"dir":"."}"#);
+
+    let sent = rig.server.requests_to("POST /v1/chat/completions");
+    let body: serde_json::Value = serde_json::from_str(&sent[0].body).unwrap();
+    assert_eq!(body["tools"][0]["type"], "function");
+    assert_eq!(body["tools"][0]["function"]["name"], "read_file");
+    assert_eq!(body["tool_choice"], "auto");
+    let call = &body["messages"][1]["tool_calls"][0];
+    assert_eq!(call["id"], "call_0");
+    assert_eq!(call["function"]["arguments"], r#"{"path":"a.txt"}"#);
+    assert_eq!(body["messages"][2]["role"], "tool");
+    assert_eq!(body["messages"][2]["tool_call_id"], "call_0");
 }

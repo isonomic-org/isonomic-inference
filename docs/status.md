@@ -3,6 +3,64 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+## Tool calls on the local provider (#49)
+
+The engine needs to offer tools to Chat on local models. Additions to the
+frozen chat types, all optional, nothing removed or renamed; the provider
+trait is unchanged:
+
+- `ChatRequest::tools: Vec<ChatTool>` and `ChatRequest::tool_choice:
+  Option<String>` (`"auto"`, `"none"` or `"required"`). `ChatTool { name,
+  description, parameters }` goes out as `{"type": "function", "function":
+  {name, description, parameters}}`. Empty tools and an unset choice send
+  nothing, so a request without tools is byte for byte what it was.
+- `ChatMessage::tool_calls: Vec<ChatToolCall>` and
+  `ChatMessage::tool_call_id: Option<String>`. `ChatToolCall { id, name,
+  arguments }` goes out as `{"id", "type": "function", "function": {name,
+  arguments}}`, with the arguments as the model's JSON text, unparsed.
+  Constructors: `ChatMessage::text`, `assistant_tool_calls`, `tool_result`.
+- `ChatChunk::tool_calls: Vec<ToolCallDelta>`. `ToolCallDelta { index, id,
+  name, arguments }`: fragments with the same index are one call, the first
+  carries id and name, every fragment may add argument text. The local
+  provider fills it from `choices[0].delta.tool_calls`; `finish_reason`
+  reads `"tool_calls"` when the model stops to call tools.
+- `ChatMessage`, `ChatChunk` now derive `Default`, so callers can write
+  `..Default::default()` and stay source-compatible with later optional
+  fields.
+- The tool types live in `inference-core/src/tools.rs`, re-exported from
+  `chat` and from the provider crate. `inference-core` now depends on
+  `serde_json` (for the tool's parameter schema).
+
+Findings and decisions:
+
+- **Template engine.** The server refuses `tools`, and any `tool_choice`
+  but `"auto"`, unless its Jinja template engine is on. In the tested build
+  (b12387) it is on by default for the server, with `--jinja` and
+  `--no-jinja` to set it. Chat launches now pass `--jinja` anyway, so tool
+  calling does not depend on a build's default, and both spellings are
+  reserved arguments. Embedding launches do not get it. No build is pinned
+  in this repo; b12387 is the one the gate and the benchmarks used.
+- **Empty content.** The server accepts an assistant message whose content
+  is a string (empty included) or null when it has tool calls, and requires
+  content on every other role. `content` stays a `String` and is always
+  sent; an assistant message that only calls tools sends `""`. `null` reads
+  back as empty.
+- **Stream parsing.** A missing tool-call index takes its position in the
+  event; an index that is not a whole number below 2^32 is a protocol error.
+  An empty id or name on a later fragment counts as absent.
+- The fake server answers a request that offers tools with two calls whose
+  arguments interleave, then `finish_reason: "tool_calls"`.
+- Tests: JSON of a request with tools, of an assistant tool-call message and
+  of a tool result; a two-call interleaved stream reassembled; bad indexes;
+  the launch arguments; and the provider end to end against the fake server.
+
+Deviation: the rules ask before the frozen types change. This change was
+asked for in the brief for the engine's tool offer; it has no numbered
+decision yet and is additive only, so Omar or the master session confirms
+it before merge. Not done: no real-model tool-call run yet, and the local
+provider still parses the stream itself rather than through the protocol
+crate.
+
 ## Cargo.lock committed (#29)
 
 - `Cargo.lock` is committed and no longer ignored, so builds are
