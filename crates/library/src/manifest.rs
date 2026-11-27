@@ -3,12 +3,13 @@
 
 //! The manifest of known models.
 //!
-//! The data lives in `models.json` next to this crate's manifest and is
+//! The data lives in `models.json` next to this crate's manifest, with more
+//! entries in `models/*.json` (split to keep each file small), and is
 //! compiled in. Every entry records where the file comes from, its SHA-256,
 //! its size, what it can do and its license. An entry whose license does not
 //! allow commercial use is rejected when the manifest is loaded.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 use isonomic_inference_core::{Capability, ModelMetadata, ModelRef};
 use serde::{Deserialize, Serialize};
@@ -20,6 +21,14 @@ use crate::download::ModelSpec;
 pub const DEFAULT_MODEL_MAX_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 
 const BUILTIN: &str = include_str!("../models.json");
+
+/// The other built-in files: `models` lists only, no defaults.
+const BUILTIN_MORE: [&str; 4] = [
+    include_str!("../models/google.json"),
+    include_str!("../models/mistral.json"),
+    include_str!("../models/more.json"),
+    include_str!("../models/qwen.json"),
+];
 
 /// One known model.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -37,6 +46,18 @@ pub struct ModelEntry {
     /// has been proven.
     #[serde(default)]
     pub draft: bool,
+    /// Who publishes the weights, for a list row.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub publisher: Option<String>,
+    /// One line about the model, for a list row.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub about: Option<String>,
+    /// The least memory, in GB, of a machine it is recommended on.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_ram_gb: Option<u32>,
+    /// What it is good at: `tools`, `vision`, `code`, `reasoning`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<String>,
 }
 
 impl ModelEntry {
@@ -56,6 +77,15 @@ struct ManifestFile {
     default_chat: ModelRef,
     #[serde(default)]
     default_embeddings: Option<ModelRef>,
+    /// The default chat model by the machine's memory in GB, as text keys.
+    #[serde(default)]
+    default_chat_by_ram: BTreeMap<String, ModelRef>,
+    models: Vec<ModelEntry>,
+}
+
+/// A further file of entries.
+#[derive(Debug, Deserialize)]
+struct MoreFile {
     models: Vec<ModelEntry>,
 }
 
@@ -65,6 +95,8 @@ pub struct Manifest {
     entries: Vec<ModelEntry>,
     default_chat: ModelRef,
     default_embeddings: Option<ModelRef>,
+    /// (memory in GB, model), smallest memory first.
+    default_chat_by_ram: Vec<(u32, ModelRef)>,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -86,13 +118,24 @@ pub enum ManifestError {
 impl Manifest {
     /// The manifest compiled into this crate.
     pub fn builtin() -> Self {
-        Self::from_json(BUILTIN).expect("the built-in manifest is checked by this crate's tests")
+        Self::from_parts(BUILTIN, &BUILTIN_MORE)
+            .expect("the built-in manifest is checked by this crate's tests")
     }
 
     /// Parse and validate a manifest.
     pub fn from_json(json: &str) -> Result<Self, ManifestError> {
-        let file: ManifestFile =
-            serde_json::from_str(json).map_err(|e| ManifestError::Parse(e.to_string()))?;
+        Self::from_parts(json, &[])
+    }
+
+    /// Parse and validate a manifest and further files of entries, which
+    /// hold `models` only. An id listed twice anywhere is refused.
+    pub fn from_parts(json: &str, more: &[&str]) -> Result<Self, ManifestError> {
+        let parse = |e: serde_json::Error| ManifestError::Parse(e.to_string());
+        let mut file: ManifestFile = serde_json::from_str(json).map_err(parse)?;
+        for part in more {
+            let extra: MoreFile = serde_json::from_str(part).map_err(parse)?;
+            file.models.extend(extra.models);
+        }
         let mut seen = HashSet::new();
         for entry in &file.models {
             validate(entry)?;
@@ -100,12 +143,25 @@ impl Manifest {
                 return Err(ManifestError::Duplicate(entry.meta.id.to_string()));
             }
         }
+        let mut by_ram = Vec::new();
+        for (gb, id) in file.default_chat_by_ram {
+            let gb = gb.parse::<u32>().map_err(|_| ManifestError::Invalid {
+                id: id.to_string(),
+                problem: format!("default_chat_by_ram key {gb:?} is not a whole number of GB"),
+            })?;
+            by_ram.push((gb, id));
+        }
+        by_ram.sort_by_key(|(gb, _)| *gb);
         let manifest = Self {
             entries: file.models,
             default_chat: file.default_chat,
             default_embeddings: file.default_embeddings,
+            default_chat_by_ram: by_ram,
         };
         manifest.check_default(&manifest.default_chat, Capability::Chat)?;
+        for (_, id) in &manifest.default_chat_by_ram {
+            manifest.check_default(id, Capability::Chat)?;
+        }
         if let Some(id) = &manifest.default_embeddings {
             manifest.check_default(id, Capability::Embeddings)?;
         }
@@ -144,6 +200,18 @@ impl Manifest {
     pub fn default_chat(&self) -> &ModelEntry {
         self.get(&self.default_chat)
             .expect("validated when the manifest was loaded")
+    }
+
+    /// The default chat model for a machine with `ram_gb` of memory: the
+    /// entry for the largest memory at or below it, else
+    /// [`default_chat`](Self::default_chat).
+    pub fn default_chat_for_ram(&self, ram_gb: u32) -> &ModelEntry {
+        self.default_chat_by_ram
+            .iter()
+            .rev()
+            .find(|(gb, _)| *gb <= ram_gb)
+            .and_then(|(_, id)| self.get(id))
+            .unwrap_or_else(|| self.default_chat())
     }
 
     /// The default embedding model, if the manifest names one.
@@ -291,6 +359,40 @@ mod tests {
         assert!(matches!(
             Manifest::from_json("not json").unwrap_err(),
             ManifestError::Parse(_)
+        ));
+    }
+
+    #[test]
+    fn the_builtin_catalogue_loads_every_file_with_its_row_fields() {
+        let m = Manifest::builtin();
+        let chat = m.with_capability(Capability::Chat).count();
+        assert!(chat >= 30, "{chat} chat models");
+        assert!(m
+            .entries()
+            .iter()
+            .all(|e| e.publisher.is_some() && e.about.is_some()));
+        assert!(m.entries().iter().all(|e| e.min_ram_gb.is_some()));
+    }
+
+    #[test]
+    fn the_default_follows_memory_and_falls_back() {
+        let m = Manifest::builtin();
+        assert_eq!(m.default_chat_for_ram(4).meta.id, m.default_chat().meta.id);
+        let at = |gb| m.default_chat_for_ram(gb).meta.id.to_string();
+        assert_eq!(at(8), "qwen3.5-4b-q4-k-m");
+        assert_eq!(at(12), "qwen3.5-4b-q4-k-m");
+        assert_eq!(at(16), "qwen3.5-9b-q4-k-m");
+        assert_eq!(at(128), "qwen3.6-35b-a3b-ud-q4-k-xl");
+    }
+
+    #[test]
+    fn an_id_in_two_files_is_refused() {
+        let base = one("", true, &good_sha(), "https://example.invalid/m.gguf");
+        let models = &base[base.find(r#""models""#).unwrap()..];
+        let more = format!("{{{models}");
+        assert!(matches!(
+            Manifest::from_parts(&base, &[&more]),
+            Err(ManifestError::Duplicate(_))
         ));
     }
 }

@@ -3,6 +3,28 @@
 What is actually built, newest first, with every deviation and deferral.
 The spec is [spec.md](spec.md).
 
+
+## 2026-11-27 · The model catalogue: 36 models, with row fields
+
+- **36 entries:** 30 chat models and 6 embedding models, single-file weights
+  from each publisher's official repository, in `models.json` plus
+  `models/google.json`, `mistral.json`, `more.json` and `qwen.json` (split to
+  keep each file under the size limit). Phi-3 mini is replaced by Phi-4 mini.
+  Left out: models whose licences are outside the allow-list, and sharded or
+  very large ones.
+- **New entries are `draft: true`** until a real download confirms the
+  hash. Hashes and sizes were read twice from the model host and agreed; the
+  hash is enforced on every download either way.
+- **Row fields:** `publisher`, `about`, `min_ram_gb` and `tags` (tools,
+  vision, code, reasoning) on every entry, all optional in the format.
+- **`default_chat_by_ram`:** the default chat model by memory (8, 16, 32 and
+  64 GB). `Manifest::default_chat_for_ram(gb)` takes the entry for the largest
+  memory at or below the machine's, else `default_chat`.
+- **`Manifest::from_parts`** reads the main file and the others; an id listed
+  twice anywhere is refused.
+- Tests: the built-in catalogue loads with every row field, the default by
+  memory and its fallback, a duplicate across files.
+
 ## Tool calls on the local provider (#49)
 
 The engine needs to offer tools to Chat on local models. Additions to the
