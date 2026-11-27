@@ -44,6 +44,8 @@ pub const RESERVED_ARGS: &[&str] = &[
     "--parallel",
     "-rea",
     "--reasoning",
+    "--jinja",
+    "--no-jinja",
 ];
 
 /// Default context window per launch, in tokens. The server's own default is
@@ -251,6 +253,12 @@ fn owned_args(addr: SocketAddr, model: &Path, options: &ServerOptions) -> Vec<Os
     if options.mode == ServerMode::Chat {
         args.push("-rea".into());
         args.push(options.reasoning.as_arg().into());
+        // Tool calling needs the model's own chat template, run by the
+        // server's template engine: without it the server refuses `tools`
+        // and any `tool_choice` but "auto". The tested server build already
+        // defaults to it; passing it keeps tools working on a build that
+        // does not.
+        args.push("--jinja".into());
     }
     args
 }
@@ -294,7 +302,8 @@ mod tests {
                 "-np",
                 "1",
                 "-rea",
-                "off"
+                "off",
+                "--jinja"
             ]
         );
     }
@@ -343,9 +352,27 @@ mod tests {
         cfg.parallel = 2;
         cfg.reasoning = Reasoning::On;
         let args = strings(cfg.server_args(addr));
-        assert_eq!(&args[6..], ["-c", "32768", "-np", "2", "-rea", "on"]);
+        assert_eq!(
+            &args[6..],
+            ["-c", "32768", "-np", "2", "-rea", "on", "--jinja"]
+        );
         cfg.reasoning = Reasoning::Auto;
-        assert_eq!(strings(cfg.server_args(addr)).last().unwrap(), "auto");
+        let args = strings(cfg.server_args(addr));
+        assert_eq!(args[args.len() - 2], "auto");
+    }
+
+    #[test]
+    fn chat_launches_turn_the_template_engine_on_for_tool_calls() {
+        let addr: SocketAddr = "127.0.0.1:1".parse().unwrap();
+        let mut cfg = config();
+        let args = strings(cfg.server_args(addr));
+        assert_eq!(args.iter().filter(|a| *a == "--jinja").count(), 1);
+        // The same command line through the worker spec.
+        let spec_args: Vec<String> = strings((cfg.to_spec().args)(addr));
+        assert!(spec_args.contains(&"--jinja".to_string()));
+        // Embedding launches have no chat template to run.
+        cfg.mode = ServerMode::Embedding;
+        assert!(!strings(cfg.server_args(addr)).contains(&"--jinja".to_string()));
     }
 
     #[test]
@@ -374,6 +401,8 @@ mod tests {
             "--ctx-size=262144",
             "-np",
             "--reasoning=on",
+            "--no-jinja",
+            "--jinja",
         ] {
             let mut cfg = config();
             cfg.extra_args = vec![arg.to_string()];

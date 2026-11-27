@@ -217,13 +217,14 @@ async fn chat(
 
     let request = ChatRequest {
         model: None,
-        messages: vec![ChatMessage {
-            role: "user".to_string(),
-            content: "Say hello in one short sentence.".to_string(),
-        }],
+        messages: vec![ChatMessage::text(
+            "user",
+            "Say hello in one short sentence.",
+        )],
         temperature: Some(0.0),
         max_tokens: Some(options.max_tokens),
         reasoning: None,
+        ..ChatRequest::default()
     };
     let asked = Instant::now();
     let mut stream = provider.chat(request).await.map_err(|e| e.to_string())?;

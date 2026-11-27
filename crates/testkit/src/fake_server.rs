@@ -5,7 +5,9 @@
 //! workspace uses (`/health`, `/v1/chat/completions` as an event stream,
 //! `/v1/embeddings`), running in the test process on a loopback port. A chat
 //! request that turns reasoning on (`chat_template_kwargs.enable_thinking`)
-//! is answered with a reasoning delta first.
+//! is answered with a reasoning delta first. A chat request that offers
+//! tools is answered with two tool calls, their argument fragments
+//! interleaved, ending with `finish_reason: "tool_calls"`.
 
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -125,6 +127,24 @@ const SSE_REST: &str = concat!(
     "data: [DONE]\n\n",
 );
 
+/// The answer to a request that offers tools: `read_file` on `a.txt` (call
+/// 0) and `list_dir` on `.` (call 1), split across several events.
+const SSE_TOOL_CALLS: &str = concat!(
+    r#"data: {"choices":[{"delta":{"role":"assistant","content":null,"tool_calls":[{"index":0,"id":"call_a","type":"function","function":{"name":"read_file","arguments":""}}]},"finish_reason":null}]}"#,
+    "\n\n",
+    r#"data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"pa"}}]},"finish_reason":null}]}"#,
+    "\n\n",
+    r#"data: {"choices":[{"delta":{"tool_calls":[{"index":1,"id":"call_b","type":"function","function":{"name":"list_dir","arguments":"{\"dir"}}]},"finish_reason":null}]}"#,
+    "\n\n",
+    r#"data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"th\":\"a.txt\"}"}}]},"finish_reason":null}]}"#,
+    "\n\n",
+    r#"data: {"choices":[{"delta":{"tool_calls":[{"index":1,"function":{"arguments":"\":\".\"}"}}]},"finish_reason":null}]}"#,
+    "\n\n",
+    r#"data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}"#,
+    "\n\n",
+    "data: [DONE]\n\n",
+);
+
 fn find_subslice(hay: &[u8], needle: &[u8]) -> Option<usize> {
     hay.windows(needle.len()).position(|w| w == needle)
 }
@@ -212,7 +232,12 @@ async fn serve(mut sock: TcpStream, state: Arc<State>) {
             // Like the real server: a request that turns reasoning on gets
             // the model's reasoning first, in its own field.
             let body = String::from_utf8_lossy(&buf[header_end..]);
-            if body.replace(' ', "").contains("\"enable_thinking\":true") {
+            let compact = body.replace(' ', "");
+            if compact.contains("\"tools\":[{") {
+                let _ = sock.write_all(SSE_TOOL_CALLS.as_bytes()).await;
+                return;
+            }
+            if compact.contains("\"enable_thinking\":true") {
                 let _ = sock.write_all(SSE_REASONING.as_bytes()).await;
             }
             let _ = sock.write_all(SSE_FIRST.as_bytes()).await;

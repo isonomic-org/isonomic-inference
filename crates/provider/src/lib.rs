@@ -14,8 +14,8 @@ pub mod provider;
 mod sse;
 
 pub use isonomic_inference_core::{
-    ChatChunk, ChatMessage, ChatRequest, CostEstimate, EmbedRequest, Embeddings, ModelInfo,
-    ProviderHealth, ProviderId, ReasoningChoice,
+    ChatChunk, ChatMessage, ChatRequest, ChatTool, ChatToolCall, CostEstimate, EmbedRequest,
+    Embeddings, ModelInfo, ProviderHealth, ProviderId, ReasoningChoice, ToolCallDelta,
 };
 pub use local::{LocalLlama, ReasoningPolicy};
 pub use provider::{ChatStream, GatewayError, InferenceProvider};
