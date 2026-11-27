@@ -57,7 +57,8 @@ pub(crate) fn parse_sse_line(line: &str) -> Result<SseEvent, GatewayError> {
 /// Tool-call fragments from `choices[0].delta.tool_calls`. The first
 /// fragment of a call carries its id and name; later ones carry only its
 /// index and more argument text. An empty id or name counts as absent, as
-/// some servers repeat them empty on later fragments.
+/// some servers repeat them empty on later fragments. Join them with
+/// `ToolCallAssembler`, which refuses fragments that contradict each other.
 fn parse_tool_call_deltas(calls: &serde_json::Value) -> Result<Vec<ToolCallDelta>, GatewayError> {
     let Some(calls) = calls.as_array() else {
         return Ok(Vec::new());
@@ -68,7 +69,15 @@ fn parse_tool_call_deltas(calls: &serde_json::Value) -> Result<Vec<ToolCallDelta
         .enumerate()
         .map(|(position, call)| {
             let index = match &call["index"] {
-                serde_json::Value::Null => position as u64,
+                // Without an index, only a call's first fragment (with its
+                // id) can be placed: by its position. A later fragment
+                // without one could belong to any call, so it is refused.
+                serde_json::Value::Null if text(&call["id"]).is_some() => position as u64,
+                serde_json::Value::Null => {
+                    return Err(GatewayError::Protocol(
+                        "a tool call fragment has neither an index nor an id".into(),
+                    ))
+                }
                 v => v
                     .as_u64()
                     .ok_or_else(|| GatewayError::Protocol(format!("bad tool call index: {v}")))?,
@@ -260,6 +269,12 @@ mod tests {
         assert_eq!((c.tool_calls[0].index, c.tool_calls[1].index), (0, 1));
         assert_eq!(c.tool_calls[1].id.as_deref(), Some("y"));
         assert_eq!(c.tool_calls[1].arguments, "");
+    }
+
+    #[test]
+    fn a_fragment_with_neither_index_nor_id_is_refused() {
+        let line = r#"data: {"choices":[{"delta":{"tool_calls":[{"function":{"arguments":"{}"}}]},"finish_reason":null}]}"#;
+        assert!(parse_sse_line(line).is_err());
     }
 
     #[test]
