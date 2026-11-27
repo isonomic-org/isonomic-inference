@@ -199,3 +199,101 @@ mod tests {
         assert!(serde_json::from_value::<ChatToolCall>(call).is_err());
     }
 }
+
+/// Joins streamed [`ToolCallDelta`] fragments into whole calls, in index
+/// order. A call takes its id and name from the first fragment that has
+/// them; a later fragment of the same index with a different id or name is
+/// refused, as it would splice two calls into one. A call that never got a
+/// name is refused at the end; one that never got an id is given
+/// `call_<index>`.
+#[derive(Debug, Clone, Default)]
+pub struct ToolCallAssembler {
+    calls: std::collections::BTreeMap<u32, ChatToolCall>,
+}
+
+impl ToolCallAssembler {
+    /// Add one chunk's fragments, in order.
+    pub fn push(&mut self, deltas: &[ToolCallDelta]) -> Result<(), String> {
+        for d in deltas {
+            let call = self.calls.entry(d.index).or_default();
+            for (have, new, what) in [
+                (&mut call.id, &d.id, "id"),
+                (&mut call.name, &d.name, "name"),
+            ] {
+                match new {
+                    Some(new) if have.is_empty() => *have = new.clone(),
+                    Some(new) if have != new => {
+                        return Err(format!("tool call {} got a second {what}", d.index))
+                    }
+                    _ => {}
+                }
+            }
+            call.arguments.push_str(&d.arguments);
+        }
+        Ok(())
+    }
+
+    /// Whether any fragment has arrived.
+    pub fn is_empty(&self) -> bool {
+        self.calls.is_empty()
+    }
+
+    /// The whole calls, in index order.
+    pub fn finish(self) -> Result<Vec<ChatToolCall>, String> {
+        self.calls
+            .into_iter()
+            .map(|(index, mut call)| {
+                if call.name.is_empty() {
+                    return Err(format!("tool call {index} has no name"));
+                }
+                if call.id.is_empty() {
+                    call.id = format!("call_{index}");
+                }
+                Ok(call)
+            })
+            .collect()
+    }
+}
+
+#[cfg(test)]
+mod assembler_tests {
+    use super::*;
+
+    fn d(index: u32, id: Option<&str>, name: Option<&str>, args: &str) -> ToolCallDelta {
+        ToolCallDelta {
+            index,
+            id: id.map(str::to_string),
+            name: name.map(str::to_string),
+            arguments: args.to_string(),
+        }
+    }
+
+    #[test]
+    fn interleaved_fragments_become_whole_calls_in_order() {
+        let mut a = ToolCallAssembler::default();
+        a.push(&[d(1, Some("b"), Some("g"), "{\"x")]).unwrap();
+        a.push(&[d(0, Some("a"), Some("f"), "{}")]).unwrap();
+        a.push(&[d(1, None, None, "\":1}")]).unwrap();
+        let calls = a.finish().unwrap();
+        assert_eq!(calls.len(), 2);
+        assert_eq!((calls[0].id.as_str(), calls[0].name.as_str()), ("a", "f"));
+        assert_eq!(calls[1].arguments, "{\"x\":1}");
+    }
+
+    #[test]
+    fn a_conflicting_id_or_name_is_refused() {
+        let mut a = ToolCallAssembler::default();
+        a.push(&[d(0, Some("a"), Some("f"), "")]).unwrap();
+        assert!(a.clone().push(&[d(0, Some("b"), None, "")]).is_err());
+        assert!(a.push(&[d(0, None, Some("g"), "")]).is_err());
+    }
+
+    #[test]
+    fn a_call_without_a_name_is_refused_and_one_without_an_id_is_named() {
+        let mut a = ToolCallAssembler::default();
+        a.push(&[d(0, None, Some("f"), "{}")]).unwrap();
+        assert_eq!(a.clone().finish().unwrap()[0].id, "call_0");
+        a.push(&[d(1, Some("x"), None, "")]).unwrap();
+        assert!(a.finish().is_err());
+    }
+}

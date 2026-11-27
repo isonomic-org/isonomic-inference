@@ -23,4 +23,4 @@ pub use chat::{
 pub use clock::{timeout, Clock, ManualClock, Sleep, SystemClock};
 pub use gate::{FixedGate, RamDenial, RamGate};
 pub use model::{Capability, License, ModelMetadata, ModelRef};
-pub use tools::{ChatTool, ChatToolCall, ToolCallDelta};
+pub use tools::{ChatTool, ChatToolCall, ToolCallAssembler, ToolCallDelta};
